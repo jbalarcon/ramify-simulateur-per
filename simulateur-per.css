@@ -1,0 +1,405 @@
+/* Styles Ramify existants (supposés présents dans css-ramify.css) */
+
+/* Styles additionnels pour simulateur */
+body {
+    font-family: "PP Fragment Sans", sans-serif;
+    color: var(--color--grey900);
+    background-color: var(--color--grey100);
+    line-height: 1.6;
+    padding: 2rem;
+}
+.simulator-container {
+    max-width: 80rem; /* Largeur augmentée */
+    margin: 2rem auto;
+    background-color: var(--color--grey000);
+    padding: 3rem; /* Plus d'espace */
+    border-radius: var(--radius--large);
+    box-shadow: var(--shadow--light-strong); /* Ombre plus marquée */
+}
+
+/* Styles pour les étapes */
+.step {
+    display: none; /* Caché par défaut */
+    animation: fadeIn 0.5s ease-in-out; /* Animation optionnelle */
+}
+.step.active {
+    display: block; /* Afficher l'étape active */
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-grid {
+    display: grid;
+    /* Ajustement pour la largeur 80rem: 3 colonnes si possible */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem; /* Espace accru */
+    margin-bottom: 2.5rem; /* Espace avant navigation */
+}
+.form-group {
+    margin-bottom: 1rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.75rem; /* Espace accru */
+    font-weight: 400; /* Moins gras */
+    color: var(--text--secondary);
+    font-size: 0.9rem;
+}
+ .form-group input[type="number"],
+ .form-group select,
+ .form-group input[type="text"] {
+    width: 100%;
+    padding: 0.9rem 1.2rem; /* Padding généreux */
+    border: 1px solid var(--border--primary);
+    border-radius: var(--radius--main);
+    background-color: var(--background--white);
+    font-size: 1rem;
+    font-family: inherit; /* Hériter la police */
+    color: var(--color--grey900);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+ .form-group input[type="number"]:focus,
+ .form-group select:focus,
+ .form-group input[type="text"]:focus {
+     border-color: var(--color--gold500);
+     box-shadow: 0 0 0 2px var(--color--gold200); /* Léger glow doré */
+     outline: none;
+ }
+
+/* Style spécifique pour les radios/checkbox pour un look premium */
+
+ /* Masquer le div montant frais réels si besoin */
+ #fraisReelsAmountDiv,
+ #data-fraisReelsAmountDiv {
+     padding: 0; /* Pas de padding pour le div caché */
+     margin: 0;
+     background: none;
+     border: none;
+ }
+ #fraisReelsAmountDiv label,
+ #data-fraisReelsAmountDiv label {
+     margin-left: 1.9em; /* Aligner avec les labels radio */
+     margin-bottom: 0.5rem;
+     font-size: 0.9rem; /* Rétablir taille normale */
+ }
+  #fraisReelsAmountDiv input,
+  #data-fraisReelsAmountDiv input {
+       margin-left: 1.9em;
+       width: calc(100% - 1.9em);
+   }
+
+
+.tooltip-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: var(--color--gold500);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 12px;
+    line-height: 16px;
+    cursor: help;
+    margin-left: 8px; /* Plus d'espace */
+    vertical-align: middle;
+}
+
+/* Tooltip personnalisé */
+.custom-tooltip {
+    position: absolute;
+    bottom: 125%; /* Position au-dessus de l'icône */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color--grey800);
+    color: var(--color--grey100);
+    padding: 0.5rem 0.8rem;
+    border-radius: var(--radius--main);
+    font-size: 0.85rem;
+    max-width: 250px; /* Ajout d'une largeur max */
+    text-align: left; /* Alignement pour multi-lignes */
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    box-shadow: var(--shadow--dark-soft);
+}
+.custom-tooltip::after { /* Petite flèche */
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--color--grey800) transparent transparent transparent;
+}
+.tooltip-icon:hover + .custom-tooltip, /* Afficher au survol de l'icône - Géré par JS maintenant */
+.tooltip-icon.active + .custom-tooltip { /* Classe ajoutée par JS */
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Titres */
+h1 {
+     text-align: center;
+     margin-bottom: 3rem; /* Plus d'espace */
+     color: var(--color--grey900);
+     font-family: "PP Fragment Serif", sans-serif;
+     font-weight: 400;
+     font-size: 2.5rem; /* Taille ajustée */
+ }
+h2 {
+    font-family: "PP Fragment Serif", sans-serif;
+    color: var(--color--grey900);
+    margin-top: 0;
+    margin-bottom: 2.5rem; /* Plus d'espace */
+    font-size: 1.8rem;
+    font-weight: 400;
+    /* border-bottom: 1px solid var(--color--grey200); */ /* Supprimé */
+    padding-bottom: 1rem; /* Peut être réduit ou supprimé si plus de ligne */
+}
+h3 {
+    font-family: "PP Fragment Serif", sans-serif;
+    color: var(--color--grey900);
+    margin-top: 2.5rem; /* Plus d'espace */
+    margin-bottom: 1.5rem; /* Plus d'espace */
+     font-size: 1.5rem;
+    border-bottom: 1px solid var(--border--primary);
+    padding-bottom: 0.75rem;
+}
+
+/* Zone de résultats */
+.output-section {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color--grey200);
+}
+.output-grid {
+     display: grid;
+     /* Mieux utiliser l'espace sur 80rem */
+     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+.output-item {
+    background-color: var(--color--grey100);
+    padding: 1.5rem;
+    border-radius: var(--radius--main);
+    border: 1px solid var(--color--grey200);
+}
+.output-item strong {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: var(--text--secondary);
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.output-value {
+    font-size: 1.3rem; /* Taille augmentée */
+    font-weight: 500;
+    color: var(--color--grey900);
+}
+ .comparison {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: var(--color--gold700);
+    margin-top: 0.3rem;
+ }
+
+/* Graphique */
+.chart-container {
+    margin-top: 2.5rem;
+    padding: 2rem;
+    background-color: var(--color--grey100);
+    border-radius: var(--radius--main);
+    border: 1px solid var(--color--grey200);
+    max-height: 500px;
+    position: relative;
+}
+
+/* Navigation */
+.navigation-buttons {
+    display: flex;
+    justify-content: flex-end; /* Aligner à droite */
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color--grey200);
+}
+.navigation-buttons button {
+    margin-left: 1rem; /* Espace entre boutons si Précédent visible */
+}
+#prev-btn {
+    visibility: hidden;
+}
+#prev-btn.visible {
+    visibility: visible;
+}
+
+/* Styles pour les onglets post-simulation */
+.tabs-navigation {
+    display: flex;
+    border-bottom: 1px solid var(--color--grey300);
+    margin-bottom: 2.5rem;
+}
+.tab-link {
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: var(--text--secondary);
+    font-size: 1.2rem; /* Taille onglet */
+    font-family: "PP Fragment Serif", sans-serif;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
+.tab-link:hover {
+    color: var(--color--grey900);
+}
+.tab-link.active {
+    color: var(--color--grey900);
+    font-weight: 500;
+    border-bottom-color: var(--color--gold500);
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* CTA */
+.cta-container {
+    text-align: center;
+    margin-top: 3rem;
+}
+.cta-container .button {
+     margin: 0 0.5rem;
+}
+
+/* Alertes */
+.alert-message {
+    background-color: var(--color--gold200);
+    color: var(--color--gold800);
+    padding: 1rem;
+    border-radius: var(--radius--main);
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    display: none;
+    border: 1px solid var(--color--gold400);
+}
+
+/* Conteneur pour options radio (Frais réels) */
+.radio-options-container {
+    display: flex;
+    flex-direction: row; /* Mettre côte à côte */
+    gap: 1rem; /* Espace entre les options */
+}
+.radio-group-option {
+     /* Styles repris de .radio-group div pour l'apparence */
+     display: flex;
+     align-items: center;
+     background-color: var(--color--grey100);
+     padding: 0.8rem 1rem;
+     border-radius: var(--radius--main);
+     border: 1px solid var(--color--grey200); /* Bordure légère par défaut */
+     transition: border-color 0.3s ease, background-color 0.3s ease;
+     flex: 1; /* Partager l'espace disponible */
+     cursor: pointer; /* Rendre toute la zone cliquable */
+}
+.radio-group-option:has(input[type="radio"]:checked) {
+     border-color: var(--color--gold500);
+     background-color: var(--color--gold200);
+}
+.radio-group-option input[type="radio"] {
+    margin-right: 0.8rem;
+    width: 1.1em;
+    height: 1.1em;
+    accent-color: var(--color--gold700); /* Assurer couleur dorée */
+    cursor: pointer;
+}
+ .radio-group-option label {
+     margin-bottom: 0; /* Annuler marge label */
+     cursor: pointer;
+     flex-grow: 1; /* Permettre au label de prendre l'espace */
+     /* Pas besoin de retirer le cursor pointer ici car il est sur l'option entière */
+ }
+
+/* Progress Indicator */
+.progress-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centrer les étapes */
+    margin-bottom: 3rem;
+    /* padding: 0 5%; /* Supprimé pour moins de largeur */
+    width: 60%; /* Largeur réduite */
+    margin-left: auto; /* Centrer l'indicateur */
+    margin-right: auto;
+    position: relative;
+}
+.progress-step {
+    display: flex;
+    align-items: center; /* Aligner numéro et titre */
+    flex-direction: row; /* Éléments côte à côte */
+    text-align: left; /* Alignement texte */
+    color: var(--color--grey400);
+    transition: color 0.4s ease;
+    z-index: 1;
+    background-color: var(--color--grey000);
+    padding: 0 0.8rem; /* Padding horizontal pour masquer ligne */
+    white-space: nowrap; /* Empêcher retour à la ligne */
+}
+.progress-step.active {
+    color: var(--color--grey900);
+}
+.step-number {
+    width: 24px; /* Taille réduite */
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--color--grey200);
+    color: var(--color--grey500);
+    display: inline-flex; /* Affichage inline */
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    font-size: 0.8rem; /* Taille police réduite */
+    margin-right: 0.5rem; /* Espace entre numéro et titre */
+    margin-bottom: 0; /* Reset marge bottom */
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+    border: 1px solid var(--color--grey300); /* Bordure plus fine */
+    flex-shrink: 0; /* Empêcher la réduction */
+}
+.progress-step.active .step-number {
+    background-color: var(--color--gold200);
+    color: var(--color--gold700);
+    border-color: var(--color--gold500);
+}
+.step-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: inline; /* Affichage inline */
+}
+.progress-line {
+    position: absolute;
+    top: 12px; /* Aligner verticalement avec les numéros */
+    left: 15%; /* Ajuster pour la largeur réduite et padding */
+    right: 15%;
+    height: 1px; /* Ligne plus fine */
+    background-color: var(--color--grey300);
+    z-index: 0;
+}
+.progress-line-active {
+    position: absolute;
+    top: 12px; /* Aligner verticalement */
+    left: 15%;
+    height: 1px; /* Ligne plus fine */
+    background-color: var(--color--gold500);
+    z-index: 0;
+    width: 0;
+    transition: width 0.4s ease;
+} 

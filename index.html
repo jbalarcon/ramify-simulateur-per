@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur PER Ramify</title>
+    <link rel="stylesheet" href="css-ramify.css">
+    <link rel="stylesheet" href="simulateur-per.css">
+</head>
+<body>
+    <div class="simulator-container">
+        <h1>Simulateur PER Ramify</h1>
+
+        <!-- Progress Indicator -->
+        <div class="progress-indicator">
+            <div class="progress-step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-title">Votre situation</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-title">Projet & Contrat</div>
+            </div>
+            <!-- La ligne finale n'est pas nécessaire si on a 2 étapes -->
+        </div>
+        <!-- Fin Progress Indicator -->
+
+        <form id="simulator-form">
+
+            <!-- Étape 1: Informations Personnelles & Revenus -->
+            <div class="step active" id="step-1">
+                <h2>Votre situation</h2>
+                <div class="form-grid">
+                    <!-- 1. Âge -->
+                    <div class="form-group">
+                        <label for="age">Quel âge avez-vous ? <span class="tooltip-icon" title="Utilisé pour calculer la durée d'épargne jusqu'à 64 ans.">?</span></label>
+                        <input type="number" id="age" name="age" min="18" max="63" required value="40">
+                    </div>
+                    <!-- 2. Situation Pro -->
+                    <div class="form-group">
+                        <label for="professionalStatus">Situation professionnelle <span class="tooltip-icon" title="Permet d'ajuster le plafond de déductibilité. 'Indépendant' inclut les professions libérales, commerçants, artisans, etc.">?</span></label>
+                        <select id="professionalStatus" name="professionalStatus" required>
+                            <option value="Salarié" selected>Salarié</option>
+                            <option value="Retraité">Retraité</option>
+                            <option value="Indépendant">Indépendant</option>
+                        </select>
+                    </div>
+                     <!-- 3. Frais Réels (Restructuré) -->
+                     <div class="form-group">
+                        <label>Êtes-vous aux frais réels ? <span class="tooltip-icon" title="Si vous ne déduisez pas de frais réels, un abattement forfaitaire de 10% (min/max applicable) sera appliqué sur vos revenus pour le calcul de l'impôt.">?</span></label>
+                        <div class="radio-options-container"> <!-- Container pour aligner Non/Oui -->
+                            <div class="radio-group-option">
+                                <input type="radio" id="fraisReelsNo" name="fraisReels" value="Non" checked>
+                                <label for="fraisReelsNo">Non</label>
+                            </div>
+                            <div class="radio-group-option">
+                                <input type="radio" id="fraisReelsYes" name="fraisReels" value="Oui">
+                                <label for="fraisReelsYes">Oui</label>
+                            </div>
+                        </div>
+                         <!-- Div pour le montant, maintenant en dehors du container Non/Oui -->
+                        <div id="fraisReelsAmountDiv" style="display: none; margin-top: 1rem; padding-left: 0;"> 
+                            <label for="fraisReelsAmount" style="margin-left: 0; font-size:0.9rem;">Montant annuel des frais réels</label>
+                            <input type="number" id="fraisReelsAmount" name="fraisReelsAmount" min="0" value="5000" style="margin-left: 0; width: 100%;">
+                        </div>
+                    </div>
+                    <!-- 4. Revenus -->
+                    <div class="form-group">
+                        <label for="netIncome">Revenus nets annuels de votre foyer (avant IR) <span class="tooltip-icon" title="Comme indiqué sur votre avis d'imposition.">?</span></label>
+                        <input type="number" id="netIncome" name="netIncome" min="0" required value="60000">
+                    </div>
+                    <!-- 5. Évolution Revenus -->
+                    <div class="form-group" id="incomeEvolutionGroup">
+                        <label for="incomeEvolution">Quelle progression de vos revenus prévoyez-vous ? <span class="tooltip-icon" title="Ex: 3% = inflation + augmentation. 'Moyenne' si incertain.">?</span></label>
+                        <select id="incomeEvolution" name="incomeEvolution" required>
+                            <option value="0.01">Faible (1%)</option>
+                            <option value="0.03" selected>Moyenne (3%)</option>
+                            <option value="0.05">Forte (5%)</option>
+                        </select>
+                    </div>
+                    <!-- 6. Parts Fiscales -->
+                    <div class="form-group">
+                        <label for="fiscalParts">Nombre de parts fiscales <span class="tooltip-icon" title="1 pour un célibataire, 2 pour un couple, +0,5 par enfant, etc.">?</span></label>
+                        <input type="number" id="fiscalParts" name="fiscalParts" min="1" step="0.5" required value="2">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Étape 2 (Ancienne Étape 3): Projet PER & Contrat -->
+            <div class="step" id="step-2">
+                <h2>Votre projet et contrat PER</h2>
+                <div class="form-grid">
+                     <!-- 1. PER déjà ouvert ? -->
+                     <div class="form-group">
+                        <label>Avez-vous déjà un contrat PER ouvert ?</label>
+                        <div class="radio-options-container">
+                             <div class="radio-group-option">
+                                 <input type="radio" id="perExistingNo" name="perExisting" value="Non" checked>
+                                 <label for="perExistingNo">Non</label>
+                             </div>
+                             <div class="radio-group-option">
+                                 <input type="radio" id="perExistingYes" name="perExisting" value="Oui">
+                                 <label for="perExistingYes">Oui</label>
+                             </div>
+                        </div>
+                     </div>
+                     <!-- 2. Type de contrat -->
+                    <div class="form-group">
+                        <label for="contractType">Type de contrat PER <span class="tooltip-icon" title="Détermine les frais et performances standards.">?</span></label>
+                        <select id="contractType" name="contractType" required>
+                            <option value="Courtier en ligne" selected>Courtier en ligne</option>
+                            <option value="Banque ou Assureur traditionnel">Banque ou Assureur traditionnel</option>
+                        </select>
+                    </div>
+                     <!-- 3. Profil -->
+                     <div class="form-group">
+                        <label for="riskProfile">Votre profil de risque <span class="tooltip-icon" title="Défensif: sécurité max; Équilibré: compromis; Agressif: potentiel élevé, risque élevé.">?</span></label>
+                        <select id="riskProfile" name="riskProfile" required>
+                            <option value="Défensif">Défensif (100% fonds euros)</option>
+                            <option value="Équilibré" selected>Équilibré (50% fonds euros / 50% UC)</option>
+                            <option value="Agressif">Agressif (100% UC)</option>
+                        </select>
+                    </div>
+                     <!-- 4. Investissement initial -->
+                    <div class="form-group">
+                        <label for="initialInvestment" id="initialInvestmentLabel">Investissement initial prévu</label>
+                        <input type="number" id="initialInvestment" name="initialInvestment" min="0" required value="10000">
+                    </div>
+                     <!-- 5. Versements 2025 (Doit être APRÈS Initial) -->
+                     <div class="form-group" id="payments2025Group" style="display: none;">
+                         <label for="payments2025" style="margin-left:0; font-size:0.9rem;">Versements déjà effectués en 2025</label>
+                         <input type="number" id="payments2025" name="payments2025" min="0" value="0" style="margin-left:0; width:100%;">
+                     </div>
+                    <!-- 6. Versements mensuels -->
+                    <div class="form-group">
+                        <label for="monthlyPayment">Versements mensuels prévus</label>
+                        <input type="number" id="monthlyPayment" name="monthlyPayment" min="0" required value="500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="navigation-buttons">
+                <button type="button" id="prev-btn" class="button is-light">Précédent</button>
+                <button type="button" id="next-btn" class="button">Suivant</button>
+            </div>
+
+        </form>
+
+        <!-- Results Section (initially hidden) -->
+        <div id="results" style="display: none;">
+
+            <!-- Tab Navigation -->
+            <div class="tabs-navigation" style="display: flex; border-bottom: 1px solid var(--color--grey300); margin-bottom: 2rem;">
+                <button type="button" class="tab-link active" data-tab="results-content">Résultats</button>
+                <button type="button" class="tab-link" data-tab="data-content">Données</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content-wrapper">
+
+                <!-- Results Content Area -->
+                <div class="tab-content active" id="results-content">
+                    <p style="font-size: 0.9rem; color: var(--text--secondary); margin-bottom: 1.5rem;">Vous pouvez modifier vos informations dans l'onglet "Données", les résultats seront mis à jour automatiquement.</p>
+                    <!-- Existing results sections will be here -->
+                     <h2>Résultats de votre simulation</h2>
+                     <div class="output-section">
+                        <h3>Impact sur l'année en cours (2025)</h3>
+                         <div class="output-grid">
+                            <div class="output-item">
+                                <strong>Impôt sans PER</strong>
+                                <span class="output-value" id="taxWithoutPer"></span>
+                            </div>
+                            <div class="output-item">
+                                <strong>Impôt avec PER</strong>
+                                <span class="output-value" id="taxWithPer"></span>
+                            </div>
+                            <div class="output-item">
+                                <strong>Économie d'impôt</strong>
+                                <span class="output-value" id="taxSavingCurrentYear"></span>
+                            </div>
+                             <div class="output-item">
+                                <strong>Effort d'épargne réel</strong>
+                                <span class="output-value" id="realEffortCurrentYear"></span>
+                            </div>
+                            <div class="output-item">
+                                <strong>TMI (Tranche Marginale d'Imposition)</strong>
+                                <span class="output-value" id="tmi"></span>
+                            </div>
+                            <div class="output-item">
+                                <strong>Taux moyen d'imposition</strong>
+                                <span class="output-value" id="averageTaxRate"></span>
+                            </div>
+                            <div class="output-item">
+                                <strong>Plafond de déduction PER</strong>
+                                <span class="output-value" id="deductionCeiling"></span>
+                            </div>
+                         </div>
+                         <div id="alert-ceiling" class="alert-message">Vos versements dépassent votre plafond de déductibilité. L'excédent ne sera pas déductible cette année.</div>
+                         <div id="alert-aggressive" class="alert-message">Le profil Agressif offre un potentiel de rendement plus élevé, mais comporte des risques de perte en capital. Les performances passées ne garantissent pas les résultats futurs.</div>
+                    </div>
+
+                     <div class="output-section">
+                         <h3>Projection à la retraite (à 64 ans)</h3>
+                         <div class="output-grid">
+                             <div class="output-item">
+                                <strong>Capital total brut</strong>
+                                 <div>
+                                      <span class="output-value" id="grossCapital"></span>
+                                      <span class="comparison" id="grossCapitalRamify"></span>
+                                  </div>
+                             </div>
+                              <div class="output-item">
+                                 <strong>Total versements</strong>
+                                  <div>
+                                      <span class="output-value" id="totalPayments"></span>
+                                      <span class="comparison" id="totalPaymentsRamify"></span>
+                                  </div>
+                             </div>
+                              <div class="output-item">
+                                 <strong>Plus-value brute</strong>
+                                  <div>
+                                      <span class="output-value" id="grossGain"></span>
+                                      <span class="comparison" id="grossGainRamify"></span>
+                                  </div>
+                             </div>
+                             <div class="output-item">
+                                 <strong>Capital net (après frais & impôts)</strong>
+                                  <div>
+                                      <span class="output-value" id="netCapital"></span>
+                                      <span class="comparison" id="netCapitalRamify"></span>
+                                  </div>
+                             </div>
+                             <div class="output-item">
+                                 <strong>Impact total des frais</strong>
+                                  <div>
+                                      <span class="output-value" id="totalFeesImpact"></span>
+                                      <span class="comparison" id="totalFeesImpactRamify"></span>
+                                  </div>
+                             </div>
+                             <div class="output-item">
+                                 <strong>Impact total des impôts (sortie capital)</strong>
+                                  <div>
+                                     <span class="output-value" id="totalTaxesImpact"></span>
+                                     <span class="comparison" id="totalTaxesImpactRamify"></span>
+                                  </div>
+                             </div>
+                              <div class="output-item">
+                                 <strong>Économie d'impôt totale</strong>
+                                 <span class="output-value" id="totalTaxSaving"></span>
+                             </div>
+                              <div class="output-item">
+                                 <strong>Effort d'épargne réel total</strong>
+                                 <span class="output-value" id="totalRealEffort"></span>
+                             </div>
+                         </div>
+                     </div>
+
+                      <div class="chart-container">
+                          <h3>Évolution comparée du capital brut</h3>
+                          <canvas id="capitalChart"></canvas>
+                     </div>
+
+                     <div class="output-section">
+                          <h3>Options de sortie du capital net</h3>
+                          <p style="font-size: 0.9rem; color: var(--text--secondary); margin-bottom: 1rem;">Montants estimés après impôts, basés sur une sortie à 64 ans.</p>
+                          <div class="output-grid">
+                              <div class="output-item">
+                                 <strong>100% en Rente Viagère (annuelle)</strong>
+                                 <div>
+                                     <span class="output-value" id="annuityOption"></span>
+                                     <span class="comparison" id="annuityOptionRamify"></span>
+                                 </div>
+                             </div>
+                              <div class="output-item">
+                                 <strong>100% en Capital (unique)</strong>
+                                  <div>
+                                     <span class="output-value" id="lumpSumOption"></span>
+                                     <span class="comparison" id="lumpSumOptionRamify"></span>
+                                  </div>
+                             </div>
+                              <div class="output-item">
+                                 <strong>Capital Fractionné sur 10 ans (annuel)</strong>
+                                  <div>
+                                     <span class="output-value" id="fractionalOption"></span>
+                                     <span class="comparison" id="fractionalOptionRamify"></span>
+                                  </div>
+                             </div>
+                          </div>
+                     </div>
+
+                     <div class="cta-container">
+                         <button class="button is-gold">Ouvrir un PER Ramify</button>
+                         <button class="button is-light">Échanger avec un Conseiller</button>
+                         <p style="margin-top: 1rem;"><a href="#" class="button is-link">Découvrir le PER Ramify</a></p>
+                     </div>
+                </div>
+
+                <!-- Data Content Area (duplicate form inputs) -->
+                <div class="tab-content" id="data-content">
+                    <h2>Vos données</h2>
+                    <form id="data-form"> <!-- Use a different ID or no ID if needed -->
+                         <!-- Duplicate all form groups from steps 1-4 here -->
+                         <!-- IMPORTANT: Ensure input IDs are unique if necessary, or select inputs based on parent container -->
+                        <div class="form-grid">
+                             <div class="form-group">
+                                <label for="data-age">Votre âge actuel <span class="tooltip-icon" title="Utilisé pour calculer la durée d'épargne jusqu'à 64 ans.">?</span></label>
+                                <input type="number" id="data-age" name="age" min="18" max="63" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="data-professionalStatus">Situation professionnelle <span class="tooltip-icon" title="Permet d'ajuster le plafond de déductibilité. 'Indépendant' inclut les professions libérales, commerçants, artisans, etc.">?</span></label>
+                                <select id="data-professionalStatus" name="professionalStatus" required>
+                                    <option value="Salarié">Salarié</option>
+                                    <option value="Retraité">Retraité</option>
+                                    <option value="Indépendant">Indépendant</option>
+                                </select>
+                            </div>
+                             <div class="form-group">
+                                <label for="data-netIncome">Revenus nets annuels du foyer (avant IR) <span class="tooltip-icon" title="Comme indiqué sur votre avis d'imposition.">?</span></label>
+                                <input type="number" id="data-netIncome" name="netIncome" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="data-fiscalParts">Nombre de parts fiscales <span class="tooltip-icon" title="1 pour un célibataire, 2 pour un couple, +0,5 par enfant, etc.">?</span></label>
+                                <input type="number" id="data-fiscalParts" name="fiscalParts" min="1" step="0.5" required>
+                            </div>
+                             <div class="form-group">
+                                <label>Frais réels <span class="tooltip-icon" title="Si vous ne déduisez pas de frais réels, un abattement forfaitaire de 10% (min/max applicable) sera appliqué sur vos revenus pour le calcul de l'impôt.">?</span></label>
+                                <div class="radio-options-container">
+                                    <div class="radio-group-option">
+                                        <input type="radio" id="data-fraisReelsNo" name="data-fraisReels" value="Non">
+                                        <label for="data-fraisReelsNo">Non</label>
+                                    </div>
+                                    <div class="radio-group-option">
+                                        <input type="radio" id="data-fraisReelsYes" name="data-fraisReels" value="Oui">
+                                        <label for="data-fraisReelsYes">Oui</label>
+                                    </div>
+                                </div>
+                                <div id="data-fraisReelsAmountDiv" style="display: none; margin-top: 1rem;">
+                                    <label for="data-fraisReelsAmount" style="margin-left: 0; font-size:0.9rem;">Montant annuel des frais réels</label>
+                                    <input type="number" id="data-fraisReelsAmount" name="fraisReelsAmount" min="0">
+                                </div>
+                            </div>
+                            <div class="form-group" id="data-incomeEvolutionGroup">
+                                <label for="data-incomeEvolution">Évolution annuelle des revenus <span class="tooltip-icon" title="Ex: 3% = inflation + augmentation. 'Moyenne' si incertain.">?</span></label>
+                                <select id="data-incomeEvolution" name="incomeEvolution" required>
+                                    <option value="0.01">Faible (1%)</option>
+                                    <option value="0.03">Moyenne (3%)</option>
+                                    <option value="0.05">Forte (5%)</option>
+                                </select>
+                            </div>
+                             <div class="form-group">
+                                <label>PER déjà ouvert ?</label>
+                                 <div class="radio-options-container">
+                                     <div class="radio-group-option">
+                                        <input type="radio" id="data-perExistingNo" name="data-perExisting" value="Non">
+                                        <label for="data-perExistingNo">Non</label>
+                                    </div>
+                                    <div class="radio-group-option">
+                                        <input type="radio" id="data-perExistingYes" name="data-perExisting" value="Oui">
+                                        <label for="data-perExistingYes">Oui</label>
+                                    </div>
+                                 </div>
+                                 <div id="data-payments2025Group" style="display: none; margin-top: 1rem;">
+                                    <label for="data-payments2025" style="margin-left: 0; font-size:0.9rem;">Versements déjà effectués en 2025</label>
+                                    <input type="number" id="data-payments2025" name="payments2025" min="0">
+                                </div>
+                            </div>
+                             <div class="form-group">
+                                <label for="data-initialInvestment" id="data-initialInvestmentLabel">Investissement initial</label>
+                                <input type="number" id="data-initialInvestment" name="initialInvestment" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="data-monthlyPayment">Versements mensuels prévus</label>
+                                <input type="number" id="data-monthlyPayment" name="monthlyPayment" min="0" required>
+                            </div>
+                             <div class="form-group">
+                                <label for="data-contractType">Type de contrat PER <span class="tooltip-icon" title="Détermine les frais et performances standards.">?</span></label>
+                                <select id="data-contractType" name="contractType" required>
+                                    <option value="Courtier en ligne">Courtier en ligne</option>
+                                    <option value="Banque ou Assureur traditionnel">Banque ou Assureur traditionnel</option>
+                                </select>
+                            </div>
+                             <div class="form-group">
+                                <label for="data-riskProfile">Profil de risque <span class="tooltip-icon" title="Défensif: sécurité max; Équilibré: compromis; Agressif: potentiel élevé, risque élevé.">?</span></label>
+                                <select id="data-riskProfile" name="riskProfile" required>
+                                    <option value="Défensif">Défensif</option>
+                                    <option value="Équilibré">Équilibré</option>
+                                    <option value="Agressif">Agressif</option>
+                                </select>
+                            </div>
+                        </div>
+                         <!-- Pas besoin de bouton ici, le recalcul se fait au retour sur l'onglet Résultats -->
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 
