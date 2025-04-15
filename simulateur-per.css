@@ -154,17 +154,17 @@ h2 {
     font-family: "PP Fragment Serif", sans-serif;
     color: var(--color--grey900);
     margin-top: 0;
-    margin-bottom: 2.5rem; /* Plus d'espace */
+    margin-bottom: 1.5rem; /* Réduit espace après H2 */
     font-size: 1.8rem;
     font-weight: 400;
     /* border-bottom: 1px solid var(--color--grey200); */ /* Supprimé */
-    padding-bottom: 1rem; /* Peut être réduit ou supprimé si plus de ligne */
+    padding-bottom: 0; /* Supprimé padding bottom */
 }
 h3 {
     font-family: "PP Fragment Serif", sans-serif;
     color: var(--color--grey900);
-    margin-top: 2.5rem; /* Plus d'espace */
-    margin-bottom: 1.5rem; /* Plus d'espace */
+    margin-top: 2.5rem;
+    margin-bottom: 1.5rem;
      font-size: 1.5rem;
     border-bottom: 1px solid var(--border--primary);
     padding-bottom: 0.75rem;
@@ -172,9 +172,14 @@ h3 {
 
 /* Zone de résultats */
 .output-section {
-    margin-top: 2.5rem;
+    margin-top: 2rem; /* Espace réduit entre sections */
     padding-top: 2rem;
     border-top: 1px solid var(--color--grey200);
+}
+.output-section:first-of-type {
+    margin-top: 0; /* Pas de marge avant la 1ere section */
+    padding-top: 0; /* Pas de padding avant la 1ere section */
+    border-top: none; /* Pas de bordure avant la 1ere section */
 }
 .output-grid {
      display: grid;
