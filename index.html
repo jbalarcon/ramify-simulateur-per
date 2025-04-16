@@ -162,97 +162,166 @@
 
                 <!-- Results Content Area -->
                 <div class="tab-content active" id="results-content">
-                    <h2>Résultats de votre simulation</h2>
-                    <p class="info-note" style="font-size: 0.9rem; color: var(--text--secondary); margin-bottom: 2rem;">Vous pouvez modifier vos informations dans l'onglet "Données", les résultats seront mis à jour automatiquement.</p>
-                     <div class="output-section">
-                        <h3>Impact sur l'année en cours (2025)</h3>
-                         <div class="output-grid">
-                            <div class="output-item">
-                                <strong>Impôt sans PER</strong>
-                                <span class="output-value" id="taxWithoutPer"></span>
+                    
+                     <h2>Résultats de votre simulation</h2>
+                     <p class="info-note" style="font-size: 0.9rem; color: var(--text--secondary); margin-bottom: 2rem;">Vous pouvez modifier vos informations dans l'onglet "Données", les résultats seront mis à jour automatiquement.</p>
+                     <!-- Section Impact Annuel Réorganisée v2 (avec barres) -->
+                     <div class="output-section annual-impact-section">
+                        <h3>Pour cette année (2025)</h3>
+
+                        <p class="plafond-sentence">
+                            Votre plafond de déduction PER est estimé à <strong id="deductionCeiling"></strong>
+                             | Versements annuels prévus : <strong id="totalPaymentsCurrentYear"></strong>
+                        </p>
+
+                        <!-- Visualisation Barres Impôts -->
+                        <div class="tax-comparison-bars">
+                            <!-- Ligne Sans PER (Modifiée) -->
+                            <div class="tax-bar-row">
+                                <div class="tax-bar-label">Impôts à payer sans versement PER</div>
+                                <!-- Remplacer l'ancien container par le nouveau bloc -->
+                                <div class="tax-block tax-block-full">
+                                    <span class="output-value" id="taxWithoutPerValue"></span>
+                                </div>
                             </div>
-                            <div class="output-item">
-                                <strong>Impôt avec PER</strong>
-                                <span class="output-value" id="taxWithPer"></span>
+                            <!-- Ligne Avec PER (Modifiée) -->
+                            <div class="tax-bar-row">
+                                <div class="tax-bar-label">Impôts à payer avec versement PER</div>
+                                <!-- Wrapper pour les deux blocs -->
+                                <div class="tax-blocks-wrapper">
+                                    <div class="tax-block tax-block-remaining">
+                                        <span class="output-value" id="taxWithPerValue"></span>
+                                    </div>
+                                    <div class="tax-block tax-block-saving">
+                                         <span class="output-value" id="taxSavingValueInBar"></span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="output-item">
-                                <strong>Économie d'impôt</strong>
-                                <span class="output-value" id="taxSavingCurrentYear"></span>
-                            </div>
+                        </div>
+
+                         <!-- Autres Indicateurs Annuels (Grille mise à jour) -->
+                         <div class="annual-metrics-grid output-grid"> <!-- Réutilise output-grid pour la disposition -->
                              <div class="output-item">
-                                <strong>Effort d'épargne réel</strong>
-                                <span class="output-value" id="realEffortCurrentYear"></span>
-                            </div>
-                            <div class="output-item">
-                                <strong>TMI (Tranche Marginale d'Imposition)</strong>
-                                <span class="output-value" id="tmi"></span>
-                            </div>
-                            <div class="output-item">
-                                <strong>Taux moyen d'imposition</strong>
-                                <span class="output-value" id="averageTaxRate"></span>
-                            </div>
-                            <div class="output-item">
-                                <strong>Plafond de déduction PER</strong>
-                                <span class="output-value" id="deductionCeiling"></span>
-                            </div>
+                                 <label>Effort d'épargne réel</label>
+                                 <span class="output-value" id="realEffortCurrentYear"></span>
+                             </div>
+                              <!-- Nouvelle position pour la carte Economies d'impôts -->
+                             <div class="output-item tax-saving-highlight">
+                                 <label>Économies d'impôts</label>
+                                 <span class="output-value" id="taxSavingCurrentYear"></span>
+                             </div>
+                             <div class="output-item">
+                                 <label>Nouvelle TMI</label>
+                                 <span class="output-value" id="tmiWithPer"></span>
+                             </div>
+                             <div class="output-item">
+                                 <label>Nouveau Taux Moyen</label>
+                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span class="output-value" id="averageTaxRateWithPer"></span>
+                                    <span class="tax-rate-diff-badge" id="averageTaxRateDiff"></span>
+                                 </div>
+                             </div>
+                             <!-- Retiré: TMI sans PER, Taux Moyen sans PER -->
                          </div>
+
                          <div id="alert-ceiling" class="alert-message">Vos versements dépassent votre plafond de déductibilité. L'excédent ne sera pas déductible cette année.</div>
                          <div id="alert-aggressive" class="alert-message">Le profil Agressif offre un potentiel de rendement plus élevé, mais comporte des risques de perte en capital. Les performances passées ne garantissent pas les résultats futurs.</div>
                     </div>
+                     <!-- Fin Section Impact Annuel -->
 
                      <div class="output-section">
                          <h3>Projection à la retraite (à 64 ans)</h3>
+                         <!-- Row 1: User Main Results -->
                          <div class="output-grid">
                              <div class="output-item">
                                 <strong>Capital total brut</strong>
-                                 <div>
-                                      <span class="output-value" id="grossCapital"></span>
-                                      <span class="comparison" id="grossCapitalRamify"></span>
-                                  </div>
+                                 <div><span class="output-value" id="grossCapital"></span></div>
                              </div>
                               <div class="output-item">
                                  <strong>Total versements</strong>
-                                  <div>
-                                      <span class="output-value" id="totalPayments"></span>
-                                      <span class="comparison" id="totalPaymentsRamify"></span>
-                                  </div>
+                                  <div><span class="output-value" id="totalPayments"></span></div>
                              </div>
                               <div class="output-item">
                                  <strong>Plus-value brute</strong>
-                                  <div>
-                                      <span class="output-value" id="grossGain"></span>
-                                      <span class="comparison" id="grossGainRamify"></span>
-                                  </div>
+                                  <div><span class="output-value" id="grossGain"></span></div>
                              </div>
                              <div class="output-item">
                                  <strong>Capital net (après frais & impôts)</strong>
-                                  <div>
-                                      <span class="output-value" id="netCapital"></span>
-                                      <span class="comparison" id="netCapitalRamify"></span>
-                                  </div>
+                                  <div><span class="output-value" id="netCapital"></span></div>
+                             </div>
+                         </div>
+                         <!-- Separator -->
+                         <div class="comparison-separator">—— ou avec le PER Ramify ——</div>
+                         <!-- Row 2: Ramify Main Results -->
+                         <div class="output-grid">
+                             <div class="output-item ramify-item">
+                                 <strong>Capital total brut (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="grossCapitalRamifySubcard">
+                                     <span class="output-value" id="ramifyGrossCapitalValue"></span>
+                                     <span class="comparison-badge" id="ramifyGrossCapitalPercent"></span>
+                                 </div>
+                             </div>
+                             <div class="output-item ramify-item">
+                                 <strong>Total versements (Ramify Net)</strong>
+                                 <div class="ramify-comparison-subcard" id="totalPaymentsRamifySubcard">
+                                     <span class="output-value" id="ramifyTotalPaymentsValue"></span>
+                                     <span class="comparison-badge" id="ramifyTotalPaymentsPercent"></span>
+                                 </div>
+                             </div>
+                             <div class="output-item ramify-item">
+                                 <strong>Plus-value brute (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="grossGainRamifySubcard">
+                                     <span class="output-value" id="ramifyGrossGainValue"></span>
+                                     <span class="comparison-badge" id="ramifyGrossGainPercent"></span>
+                                 </div>
+                             </div>
+                              <div class="output-item ramify-item">
+                                 <strong>Capital net (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="netCapitalRamifySubcard">
+                                     <span class="output-value" id="ramifyNetCapitalValue"></span>
+                                     <span class="comparison-badge" id="ramifyNetCapitalPercent"></span>
+                                 </div>
+                             </div>
+                         </div>
+                         <!-- Row 3: User Impact Results -->
+                         <div class="output-grid" style="margin-top: 2rem;"> <!-- Add margin before next user row -->
+                             <div class="output-item">
+                                 <strong>Impact des frais</strong>
+                                  <div><span class="output-value" id="totalFeesImpact"></span></div>
                              </div>
                              <div class="output-item">
-                                 <strong>Impact total des frais</strong>
-                                  <div>
-                                      <span class="output-value" id="totalFeesImpact"></span>
-                                      <span class="comparison" id="totalFeesImpactRamify"></span>
-                                  </div>
-                             </div>
-                             <div class="output-item">
-                                 <strong>Impact total des impôts (sortie capital)</strong>
-                                  <div>
-                                     <span class="output-value" id="totalTaxesImpact"></span>
-                                     <span class="comparison" id="totalTaxesImpactRamify"></span>
-                                  </div>
+                                 <strong>Impact des impôts</strong>
+                                  <div><span class="output-value" id="totalTaxesImpact"></span></div>
                              </div>
                               <div class="output-item">
-                                 <strong>Économie d'impôt totale</strong>
+                                 <strong>Économie d'impôt</strong>
                                  <span class="output-value" id="totalTaxSaving"></span>
                              </div>
                               <div class="output-item">
-                                 <strong>Effort d'épargne réel total</strong>
+                                 <strong>Effort d'épargne réel</strong>
                                  <span class="output-value" id="totalRealEffort"></span>
                              </div>
+                         </div>
+                         <!-- Separator -->
+                         <div class="comparison-separator">—— comparaison de l'impact avec Ramify ——</div>
+                         <!-- Row 4: Ramify Impact Results -->
+                          <div class="output-grid">
+                             <div class="output-item ramify-item">
+                                 <strong>Impact des frais (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="totalFeesImpactRamifySubcard">
+                                     <span class="output-value" id="ramifyTotalFeesImpactValue"></span>
+                                     <span class="comparison-badge" id="ramifyTotalFeesImpactPercent"></span>
+                                 </div>
+                             </div>
+                             <div class="output-item ramify-item">
+                                 <strong>Impact des impôts (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="totalTaxesImpactRamifySubcard">
+                                     <span class="output-value" id="ramifyTotalTaxesImpactValue"></span>
+                                     <span class="comparison-badge" id="ramifyTotalTaxesImpactPercent"></span>
+                                 </div>
+                             </div>
+                              <div class="output-item empty-placeholder"></div> <!-- Placeholder -->
+                              <div class="output-item empty-placeholder"></div> <!-- Placeholder -->
                          </div>
                      </div>
 
@@ -264,29 +333,47 @@
                      <div class="output-section">
                           <h3>Options de sortie du capital net</h3>
                           <p style="font-size: 0.9rem; color: var(--text--secondary); margin-bottom: 1rem;">Montants estimés après impôts, basés sur une sortie à 64 ans.</p>
+                          <!-- Row 1: User Exit Options -->
                           <div class="output-grid">
                               <div class="output-item">
                                  <strong>100% en Rente Viagère (annuelle)</strong>
-                                 <div>
-                                     <span class="output-value" id="annuityOption"></span>
-                                     <span class="comparison" id="annuityOptionRamify"></span>
-                                 </div>
+                                 <div><span class="output-value" id="annuityOption"></span></div>
                              </div>
                               <div class="output-item">
                                  <strong>100% en Capital (unique)</strong>
-                                  <div>
-                                     <span class="output-value" id="lumpSumOption"></span>
-                                     <span class="comparison" id="lumpSumOptionRamify"></span>
-                                  </div>
+                                  <div><span class="output-value" id="lumpSumOption"></span></div>
                              </div>
                               <div class="output-item">
                                  <strong>Capital Fractionné sur 10 ans (annuel)</strong>
-                                  <div>
-                                     <span class="output-value" id="fractionalOption"></span>
-                                     <span class="comparison" id="fractionalOptionRamify"></span>
-                                  </div>
+                                  <div><span class="output-value" id="fractionalOption"></span> / an</div>
                              </div>
                           </div>
+                          <!-- Separator -->
+                           <div class="comparison-separator">—— ou avec le PER Ramify ——</div>
+                           <!-- Row 2: Ramify Exit Options -->
+                           <div class="output-grid">
+                               <div class="output-item ramify-item">
+                                 <strong>Rente Viagère (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="annuityOptionRamifySubcard">
+                                     <span class="output-value" id="ramifyAnnuityOptionValue"></span> / an
+                                     <span class="comparison-badge" id="ramifyAnnuityOptionPercent"></span>
+                                 </div>
+                             </div>
+                               <div class="output-item ramify-item">
+                                 <strong>Capital (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="lumpSumOptionRamifySubcard">
+                                     <span class="output-value" id="ramifyLumpSumOptionValue"></span>
+                                     <span class="comparison-badge" id="ramifyLumpSumOptionPercent"></span>
+                                 </div>
+                             </div>
+                             <div class="output-item ramify-item">
+                                 <strong>Capital Fractionné (Ramify)</strong>
+                                 <div class="ramify-comparison-subcard" id="fractionalOptionRamifySubcard">
+                                     <span class="output-value" id="ramifyFractionalOptionValue"></span> / an
+                                     <span class="comparison-badge" id="ramifyFractionalOptionPercent"></span>
+                                 </div>
+                             </div>
+                           </div>
                      </div>
 
                      <div class="cta-container">

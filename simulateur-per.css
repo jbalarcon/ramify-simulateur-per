@@ -407,4 +407,377 @@ h3 {
     z-index: 0;
     width: 0;
     transition: width 0.4s ease;
+}
+
+/* Styles spécifiques pour la section Impact Annuel */
+.annual-impact-section h3 {
+    margin-bottom: 1.5rem; 
+}
+.plafond-sentence {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 2.5rem; /* Espace avant barres */
+    color: var(--text--secondary);
+}
+.plafond-sentence strong {
+    font-weight: 600;
+    color: var(--color--grey900);
+}
+
+/* Visualisation Barres */
+.tax-comparison-bars {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2.5rem; /* Espace avant indicateurs */
+}
+.tax-bar-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto; /* Label | Barre+Valeur | Economie/Placeholder */
+    gap: 1rem;
+    align-items: center;
+}
+.tax-bar-label {
+    font-size: 0.9rem;
+    color: var(--text--secondary);
+    text-align: right;
+}
+.tax-bar-container {
+    background-color: var(--color--grey100);
+    border-radius: var(--radius--main);
+    position: relative;
+    height: 35px; /* Hauteur fixe barre */
+    overflow: hidden; /* Cacher barre qui dépasse */
+    border: 1px solid var(--color--grey200);
+    /* Ensure container has no background itself to avoid showing through */
+    background-color: transparent; 
+}
+.tax-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    border-radius: var(--radius--main) 0 0 var(--radius--main); /* Arrondi seulement à gauche */
+    transition: width 0.5s ease-in-out;
+    z-index: 1; /* Sous le segment économie */
+}
+.tax-bar-without {
+    background-color: var(--color--grey200); /* Gris plus clair pour sans PER */
+    width: 100%; /* Toujours pleine largeur */
+}
+.tax-bar-with {
+    /* background-color: #a8d8ff; Supprimé */
+    /* La largeur sera définie par JS */
+}
+.tax-bar-remaining {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    background-color: var(--color--grey200); /* Match first bar color */
+    border-radius: var(--radius--main) 0 0 var(--radius--main); /* Arrondi seulement à gauche */
+    transition: width 0.5s ease-in-out;
+    z-index: 1; /* Sous le segment économie */
+}
+.tax-bar-saving {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    background-color: var(--color--gold200); /* Fond doré clair */
+    /* border-left: 1px solid var(--color--gold400); Removed border, rely on positioning */
+    border-radius: 0 var(--radius--main) var(--radius--main) 0; /* Arrondi seulement à droite */
+    transition: width 0.5s ease-in-out;
+    z-index: 2; /* Au-dessus du segment restant */
+}
+.tax-bar-remaining:only-child,
+.tax-bar-saving:only-child {
+    border-radius: var(--radius--main); 
+}
+.tax-bar-value {
+    position: absolute; /* Ensure it's positioned */
+    right: 1rem; /* Default to right for sans PER bar */
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 500;
+    color: var(--color--grey900);
+    font-size: 0.9rem;
+    background: #ffffffcc; /* Fond semi-transparent pour lisibilité */
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    z-index: 3; /* Au-dessus des barres */
+}
+.tax-bar-value-with {
+    position: absolute;
+    left: 1rem; /* Positionné à gauche */
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 500;
+    color: var(--color--grey900);
+    font-size: 0.9rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    z-index: 3;
+}
+.tax-bar-value-saving {
+    position: absolute;
+    right: 1rem; /* Positionné à droite */
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 500;
+    color: var(--color--gold800); /* Couleur texte adaptée au fond */
+    font-size: 0.9rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    z-index: 3;
+}
+.tax-saving-highlight {
+    background-color: var(--color--gold200);
+    border: 1px solid var(--color--gold400);
+    color: var(--color--gold800);
+    padding: 1.5rem; /* Padding standard .output-item */
+    border-radius: var(--radius--main);
+    text-align: left; /* Alignement standard .output-item */
+    min-width: auto; /* Annuler largeur minimale */
+}
+.tax-saving-highlight label {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: var(--text--secondary);
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.tax-saving-highlight .output-value {
+    font-size: 1.3rem; /* Taille standard .output-value */
+    font-weight: 500;
+    color: var(--color--grey900); /* Texte noir standard */
+}
+.tax-saving-placeholder {
+    display: none;
+}
+
+/* Grille pour les métriques restantes */
+.annual-metrics-grid {
+    /* Ajustement pour 4 colonnes */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+}
+.annual-metrics-grid .output-item label {
+     display: block;
+    font-size: 0.8rem;
+    color: var(--text--secondary);
+    margin-bottom: 0.3rem;
+}
+
+/* Suppression des anciens styles de comparaison */
+/* .annual-comparison-grid { ... } */
+/* .comparison-column { ... } */
+/* .output-item-small { ... } */
+/* .highlighted { ... } */
+
+
+/* Badge pour la différence de taux moyen */
+.tax-rate-diff-badge {
+    display: inline-flex; /* Utiliser inline-flex pour aligner potentiellement une icone */
+    align-items: center;
+    background-color: var(--color--green200, #e2f0cf); /* Vert clair Ramify ou fallback */
+    color: var(--color--green600, #6a7851); /* Vert foncé Ramify ou fallback */
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius--main); /* Coins arrondis standard */
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 0.1rem;
+    /* margin-left: 0.5rem; /* Espace géré par le gap du parent flex */
+}
+
+.average-rate-block .output-value {
+    font-weight: 600;
+}
+
+/* Styles pour la sous-carte de comparaison Ramify */
+.ramify-comparison-subcard {
+    background-color: var(--background--white);
+    border: 1px solid var(--color--grey200);
+    border-radius: var(--radius--main);
+    padding: 0.8rem 1rem;
+    margin-top: 1rem;
+    display: flex; /* Pour aligner texte et badge */
+    justify-content: space-between; /* Espacer texte et badge */
+    align-items: center;
+    flex-wrap: wrap; /* Permettre le retour à la ligne si manque de place */
+    gap: 0.5rem;
+}
+.subcard-text {
+    font-size: 0.85rem;
+    color: var(--text--secondary);
+}
+.subcard-text strong {
+     font-weight: 600;
+     color: var(--color--grey900);
+}
+
+/* Badge générique pour les comparaisons % */
+.comparison-badge {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--color--gold200); /* Couleur Or Ramify */
+    color: var(--color--gold800);
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius--main);
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.2;
+    flex-shrink: 0; /* Empêcher le badge de rétrécir */
+}
+/* Optionnel: couleurs différentes si négatif ?
+.comparison-badge.negative {
+    background-color: var(--color--error-light); 
+    color: var(--color--error-dark);
+}*/
+
+/* Styles pour le séparateur de comparaison */
+.comparison-separator {
+    text-align: center;
+    color: var(--text--secondary);
+    font-style: italic;
+    margin: 2rem 0 1.5rem 0;
+    font-size: 0.9rem;
+}
+
+/* Style optionnel pour différencier visuellement les cartes Ramify */
+.ramify-item {
+    background-color: var(--color--grey000); /* Fond blanc pour contraster légèrement */
+    border-color: var(--color--grey300);
+}
+.ramify-item strong {
+    /* Optionnel: rendre le titre de la carte Ramify légèrement différent */
+}
+.ramify-item .output-value {
+    /* Optionnel: style différent pour les valeurs Ramify */
+}
+.ramify-item .comparison-badge {
+    /* Le style .comparison-badge s'applique déjà */
+}
+
+/* Placeholder pour aligner la grille quand il manque des cartes */
+.empty-placeholder {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.output-grid {
+    display: grid;
+    /* Mieux utiliser l'espace sur 80rem */
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Remove old bar segment styles */
+.tax-bar-remaining,
+.tax-bar-saving {
+    display: none; /* Hide old segments */
+}
+.tax-bar {
+    /* Keep base styles if needed elsewhere, or remove if only used for segments */
+     display: none; /* Hide old segments */
+}
+
+/* Styles for the new block structure */
+.tax-blocks-wrapper {
+    display: flex;
+    width: 100%;
+    border-radius: var(--radius--main);
+    overflow: hidden; /* Ensure children adhere to rounded corners */
+    border: 1px solid var(--color--grey200); /* Add border to wrapper */
+}
+
+.tax-block {
+    padding: 0.5rem 1rem; /* Adjust padding */
+    min-height: 35px; /* Maintain height */
+    display: flex;
+    align-items: center; /* Center content vertically */
+    justify-content: center; /* Center content horizontally */
+    text-align: center;
+    position: relative; /* For potential absolute positioning inside if needed */
+    box-sizing: border-box;
+}
+
+.tax-block .output-value {
+    font-weight: 500;
+    font-size: 1.1rem; /* Slightly larger number */
+    line-height: 1.2;
+    /* position: static; Revert to absolute for positioning */
+    transform: none;
+    /* background: none; Re-add background */
+    /* padding: 0; Re-add padding */
+    /* Re-add label styles */
+    background: #ffffffcc; /* Default light background */
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    position: absolute; /* Position within the block */
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3; /* Ensure visibility */
+}
+
+.tax-block-full {
+    flex-basis: 100%;
+    background-color: var(--color--grey200);
+    border-radius: var(--radius--main);
+    border: 1px solid var(--color--grey200);
+}
+.tax-block-full .output-value {
+    color: var(--color--grey900);
+    right: 1rem; /* Position right */
+    left: auto;
+}
+
+.tax-block-remaining {
+    background-color: var(--color--grey200);
+    /* flex-basis will be set by JS */
+    border-right: 1px solid var(--color--grey300); /* Separator line */
+}
+.tax-block-remaining .output-value {
+    color: var(--color--grey900);
+    right: 1rem; /* Position left */
+    left: auto;
+}
+
+.tax-block-saving {
+    background-color: var(--color--gold200); 
+    color: var(--color--gold800);
+    /* flex-basis will be set by JS */
+    /* Remove column layout styles */
+    /* flex-direction: column; */ 
+    /* justify-content: center; */ /* Keep default center */
+    /* padding: 0.3rem 1rem; */ /* Revert to default block padding? */
+    /* line-height: 1; */
+}
+
+/* Remove style for the deleted label */
+.tax-block-saving .saving-label {
+     display: none;
+}
+
+.tax-block-saving .output-value {
+    font-size: 1.1rem; /* Match other block values */
+    line-height: 1.2; /* Revert line height */
+    font-weight: 600; /* Make saving value slightly bolder */
+    color: var(--color--gold800);
+    /* Re-add specific background/position for this label */
+    background: #fefaeacc; /* Slightly different background */
+    right: 1rem; /* Position right */
+    left: auto;
+}
+
+/* Remove styles for absolute positioned values inside old bars */
+.tax-bar-value-with,
+.tax-bar-value-saving {
+    display: none; /* Hide old value spans */
 } 

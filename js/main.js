@@ -125,6 +125,12 @@ const lumpSumOptionSpan = document.getElementById('lumpSumOption');
 const lumpSumOptionRamifySpan = document.getElementById('lumpSumOptionRamify');
 const fractionalOptionSpan = document.getElementById('fractionalOption');
 const fractionalOptionRamifySpan = document.getElementById('fractionalOptionRamify');
+// Add new spans for annual impact section
+const tmiWithoutPerSpan = document.getElementById('tmiWithoutPer');
+const averageTaxRateWithoutPerSpan = document.getElementById('averageTaxRateWithoutPer');
+const tmiWithPerSpan = document.getElementById('tmiWithPer');
+const averageTaxRateWithPerSpan = document.getElementById('averageTaxRateWithPer');
+const averageTaxRateDiffSpan = document.getElementById('averageTaxRateDiff');
 
 // Alert messages
 const alertCeiling = document.getElementById('alert-ceiling');
@@ -909,6 +915,7 @@ function runSimulation(newInputs = null) {
         const deductiblePayment = Math.min(paymentForCurrentYearCalc, ceiling);
         const taxableIncomeWithPer = Math.max(0, taxableIncome - deductiblePayment);
         const taxInfoWithPer = calculateIncomeTax(taxableIncomeWithPer, inputs.fiscalParts, yearIndex);
+        const averageRateWithPer = taxableIncome > 0 ? taxInfoWithPer.taxAmount / taxableIncome : 0;
         const annualTaxSaving = Math.max(0, taxInfoWithoutPer.taxAmount - taxInfoWithPer.taxAmount);
         const annualRealEffort = paymentForCurrentYearCalc - annualTaxSaving;
 
@@ -916,8 +923,10 @@ function runSimulation(newInputs = null) {
             year: year,
             taxWithoutPer: taxInfoWithoutPer.taxAmount,
             taxWithPer: taxInfoWithPer.taxAmount,
-            tmi: taxInfoWithoutPer.tmi,
-            averageRate: taxInfoWithoutPer.averageRate,
+            tmiWithoutPer: taxInfoWithoutPer.tmi,
+            tmiWithPer: taxInfoWithPer.tmi,
+            averageRateWithoutPer: taxInfoWithoutPer.averageRate,
+            averageRateWithPer: averageRateWithPer,
             ceiling: ceiling,
             payment: paymentForCurrentYearCalc,
             deductiblePayment: deductiblePayment,
@@ -936,7 +945,7 @@ function runSimulation(newInputs = null) {
      const ramifyGrowthNet = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, ramifyProfileDetails.netReturn, duration, RAMIFY_DATA.entryFee);
     const userFeeImpact = Math.max(0, userGrowthGross.finalCapital - userGrowthNet.finalCapital);
     const ramifyFeeImpact = Math.max(0, ramifyGrowthGross.finalCapital - ramifyGrowthNet.finalCapital);
-    const tmiAtRetirement = annualData[duration - 1].tmi;
+    const tmiAtRetirement = annualData[duration - 1].tmiWithPer;
     const userTaxOnPayments = userGrowthNet.totalNetInvested * tmiAtRetirement;
     const userTaxOnGains = userGrowthNet.totalGrossGain * PFU_RATE;
     const userTotalTaxImpact = userTaxOnPayments + userTaxOnGains;
@@ -958,8 +967,9 @@ function runSimulation(newInputs = null) {
 
     // --- Prepare results object --- //
     const results = {
-        currentYear: annualData[0],
+        currentYearData: annualData[0],
         duration: duration,
+        tmiAtRetirement: tmiAtRetirement,
         userGrossCapital: userGrowthGross.finalCapital,
         ramifyGrossCapital: ramifyGrowthGross.finalCapital,
         userTotalPayments: totalPrincipalInvestedByUser,
@@ -984,92 +994,156 @@ function runSimulation(newInputs = null) {
         riskProfile: inputs.riskProfile,
         currentYearPayment: annualData[0].payment,
         currentYearCeiling: annualData[0].ceiling,
-        inputsForChart: inputs, // Store the inputs used for this calculation
+        inputsForChart: inputs,
         annualPERPayments: annualPERPayments,
     };
 
-    lastShownResults = results; // Store the results for potential data tab population
-    dataModified = false; // Reset modification flag after (re)calculation
+    lastShownResults = results;
+    dataModified = false;
 
     // --- Display Results & Update Chart --- //
-    progressIndicator.style.display = 'none'; // Hide progress indicator
-    tabNavigation.style.display = 'flex'; // Show tabs now
+    progressIndicator.style.display = 'none';
+    tabNavigation.style.display = 'flex';
     displayResults(results);
     updateChart(results);
 
 }
 
-// --- UI Update Function --- //
+// --- UI Update Function ---
 function displayResults(results) {
-    const cy = results.currentYear;
+    const cy = results.currentYearData;
+    if (!cy) {
+        console.error("Current year data is missing in results!");
+        return;
+    }
 
-    const getComparisonText = (userValue, ramifyValue, isPercentage = false, label = "Unknown") => {
-        if (isNaN(userValue) || isNaN(ramifyValue)) {
-             return "";
+    // Helper to format percentage diff for badges
+    const formatPercentDiff = (userValue, ramifyValue) => {
+        if (isNaN(userValue) || isNaN(ramifyValue) || Math.abs(userValue) < 0.001) {
+            return '';
         }
         const diff = ramifyValue - userValue;
-        let comparisonString = `(Ramify: ${isPercentage ? formatPercentage(ramifyValue) : formatCurrency(ramifyValue)}`;
-        if (Math.abs(userValue) > 0.001) {
-            const percentDiff = (diff / Math.abs(userValue));
-            const sign = diff >= 0 ? '+' : '';
-            comparisonString += ` / ${sign}${formatPercentage(percentDiff, 1)})`;
-        } else if (!isNaN(diff)) {
-             comparisonString += ` / ${diff > 0 ? '+' : ''}${formatCurrency(diff)})`;
-        } else {
-             comparisonString += ")";
-         }
-         return comparisonString;
+        const percentDiff = diff / Math.abs(userValue);
+        const sign = percentDiff >= 0 ? '+' : '';
+        return `${sign}${formatPercentage(percentDiff, 1)}`;
     };
 
-    // --- Update Current Year Section ---
-    taxWithoutPerSpan.textContent = formatCurrency(cy.taxWithoutPer);
-    taxWithPerSpan.textContent = formatCurrency(cy.taxWithPer);
-    taxSavingCurrentYearSpan.textContent = formatCurrency(cy.taxSaving);
-    realEffortCurrentYearSpan.textContent = formatCurrency(cy.realEffort);
-    tmiSpan.textContent = formatPercentage(cy.tmi, 0);
-    averageTaxRateSpan.textContent = formatPercentage(cy.averageRate, 1);
-    deductionCeilingSpan.textContent = formatCurrency(cy.ceiling);
+    // --- Update Current Year Section (New Structure) --- 
+    // Use helper function for cleaner display updates
+    const displayElement = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+        else console.warn(`Element with ID ${id} not found for display.`);
+    };
 
+    displayElement('deductionCeiling', formatCurrency(cy.ceiling));
+    displayElement('totalPaymentsCurrentYear', formatCurrency(results.currentYearPayment)); // Display total payments
+
+    // Populate Tax Blocks & Values
+    const taxBlockFull = document.querySelector('.tax-block-full');
+    const taxBlockRemaining = document.querySelector('.tax-block-remaining');
+    const taxBlockSaving = document.querySelector('.tax-block-saving');
+    const taxValWithoutSpan = document.getElementById('taxWithoutPerValue');
+    const taxValWithSpan = document.getElementById('taxWithPerValue');
+    const taxValSavingSpan = document.getElementById('taxSavingValueInBar');
+
+    // Display the value for the 'sans PER' block
+    if (taxValWithoutSpan) {
+        taxValWithoutSpan.textContent = formatCurrency(cy.taxWithoutPer);
+    }
+
+    // Set widths and values for 'avec PER' blocks
+    if (taxBlockRemaining && taxBlockSaving && taxValWithSpan && taxValSavingSpan) {
+        const maxTax = Math.max(cy.taxWithoutPer, 1); // Avoid division by zero
+
+        // Calculate percentages for flex-basis
+        const remainingTaxPercentage = Math.max(0, Math.min(100, (cy.taxWithPer / maxTax) * 100));
+        const savingTaxPercentage = Math.max(0, Math.min(100, (cy.taxSaving / maxTax) * 100));
+
+        // Apply flex-basis to block elements
+        taxBlockRemaining.style.flexBasis = `${remainingTaxPercentage}%`;
+        taxBlockSaving.style.flexBasis = `${savingTaxPercentage}%`;
+
+        // Display values within the blocks
+        taxValWithSpan.textContent = formatCurrency(cy.taxWithPer);
+        taxValSavingSpan.textContent = formatCurrency(cy.taxSaving);
+
+    } else {
+        console.warn("One or more elements for the 'avec PER' tax blocks are missing.");
+    }
+
+    // Populate Tax Saving Highlight card (now in the grid)
+    displayElement('taxSavingCurrentYear', formatCurrency(cy.taxSaving));
+
+    // Populate Bottom Metrics Grid
+    displayElement('realEffortCurrentYear', formatCurrency(cy.realEffort));
+    displayElement('tmiWithPer', formatPercentage(cy.tmiWithPer, 0));
+    displayElement('averageTaxRateWithPer', formatPercentage(cy.averageRateWithPer, 1));
+    const avgRateDiff = cy.averageRateWithoutPer - cy.averageRateWithPer;
+    displayElement('averageTaxRateDiff', `${avgRateDiff >= 0 ? '-' : '+'}${formatPercentage(Math.abs(avgRateDiff), 1)}`);
+    // Ensure badge has correct class (already done in CSS, but can be reinforced)
+    const badgeElement = document.getElementById('averageTaxRateDiff');
+    if(badgeElement) badgeElement.className = 'tax-rate-diff-badge';
+
+    // Alerts (remain the same)
     alertCeiling.style.display = cy.payment > cy.ceiling ? 'block' : 'none';
     alertAggressive.style.display = results.riskProfile === 'Agressif' ? 'block' : 'none';
 
-    // --- Update Retirement Projection Section ---
-    grossCapitalSpan.textContent = formatCurrency(results.userGrossCapital);
-    grossCapitalRamifySpan.textContent = getComparisonText(results.userGrossCapital, results.ramifyGrossCapital, false, "Gross Capital");
+    // --- Update Retirement Projection Section --- 
+    // Row 1: User values
+    displayElement('grossCapital', formatCurrency(results.userGrossCapital));
+    displayElement('totalPayments', formatCurrency(results.userTotalPayments));
+    displayElement('grossGain', formatCurrency(results.userGrossGain));
+    displayElement('netCapital', formatCurrency(results.userNetCapital));
 
-    totalPaymentsSpan.textContent = formatCurrency(results.userTotalPayments);
+    // Row 2: Ramify values & comparison badges
+    displayElement('ramifyGrossCapitalValue', formatCurrency(results.ramifyGrossCapital));
+    displayElement('ramifyGrossCapitalPercent', formatPercentDiff(results.userGrossCapital, results.ramifyGrossCapital));
+
     const userNetInvested = calculateCapitalGrowth(results.inputsForChart.initialInvestment, results.annualPERPayments, 0, results.duration, CONTRACT_DATA[results.inputsForChart.contractType].entryFee).totalNetInvested;
     const ramifyNetInvested = calculateCapitalGrowth(results.inputsForChart.initialInvestment, results.annualPERPayments, 0, results.duration, RAMIFY_DATA.entryFee).totalNetInvested;
-    if (Math.abs(userNetInvested - ramifyNetInvested) > 1) {
-       totalPaymentsRamifySpan.textContent = getComparisonText(userNetInvested, ramifyNetInvested, false, "Net Invested");
-    } else {
-        totalPaymentsRamifySpan.textContent = "";
+    displayElement('ramifyTotalPaymentsValue', formatCurrency(ramifyNetInvested));
+    displayElement('ramifyTotalPaymentsPercent', formatPercentDiff(userNetInvested, ramifyNetInvested));
+    // Hide comparison if values are essentially the same
+    const totalPaymentsSubcard = document.getElementById('totalPaymentsRamifySubcard');
+    if (totalPaymentsSubcard) {
+        totalPaymentsSubcard.style.display = (Math.abs(userNetInvested - ramifyNetInvested) <= 1) ? 'none' : 'flex';
     }
 
-    grossGainSpan.textContent = formatCurrency(results.userGrossGain);
-    grossGainRamifySpan.textContent = getComparisonText(results.userGrossGain, results.ramifyGrossGain, false, "Gross Gain");
+    displayElement('ramifyGrossGainValue', formatCurrency(results.ramifyGrossGain));
+    displayElement('ramifyGrossGainPercent', formatPercentDiff(results.userGrossGain, results.ramifyGrossGain));
 
-    netCapitalSpan.textContent = formatCurrency(results.userNetCapital);
-    netCapitalRamifySpan.textContent = getComparisonText(results.userNetCapital, results.ramifyNetCapital, false, "Net Capital");
+    displayElement('ramifyNetCapitalValue', formatCurrency(results.ramifyNetCapital));
+    displayElement('ramifyNetCapitalPercent', formatPercentDiff(results.userNetCapital, results.ramifyNetCapital));
 
-    totalFeesImpactSpan.textContent = formatCurrency(results.userFeeImpact);
-    totalFeesImpactRamifySpan.textContent = getComparisonText(results.userFeeImpact, results.ramifyFeeImpact, false, "Fee Impact");
+    // Row 3: User impact values
+    displayElement('totalFeesImpact', formatCurrency(results.userFeeImpact));
+    displayElement('totalTaxesImpact', formatCurrency(results.userTaxImpact));
+    displayElement('totalTaxSaving', formatCurrency(results.totalTaxSaving));
+    displayElement('totalRealEffort', formatCurrency(results.totalRealEffort));
 
-    totalTaxesImpactSpan.textContent = formatCurrency(results.userTaxImpact);
-    totalTaxesImpactRamifySpan.textContent = getComparisonText(results.userTaxImpact, results.ramifyTaxImpact, false, "Tax Impact");
+    // Row 4: Ramify impact values & comparison badges
+    displayElement('ramifyTotalFeesImpactValue', formatCurrency(results.ramifyFeeImpact));
+    displayElement('ramifyTotalFeesImpactPercent', formatPercentDiff(results.userFeeImpact, results.ramifyFeeImpact));
 
-    totalTaxSavingSpan.textContent = formatCurrency(results.totalTaxSaving);
-    totalRealEffortSpan.textContent = formatCurrency(results.totalRealEffort);
+    displayElement('ramifyTotalTaxesImpactValue', formatCurrency(results.ramifyTaxImpact));
+    displayElement('ramifyTotalTaxesImpactPercent', formatPercentDiff(results.userTaxImpact, results.ramifyTaxImpact));
 
-    // --- Update Exit Options Section ---
-    annuityOptionSpan.textContent = formatCurrency(results.userAnnuity) + " / an";
-    annuityOptionRamifySpan.textContent = getComparisonText(results.userAnnuity, results.ramifyAnnuity, false, "Annuity");
+    // --- Update Exit Options Section --- 
+    // Row 1: User values
+    displayElement('annuityOption', formatCurrency(results.userAnnuity));
+    displayElement('lumpSumOption', formatCurrency(results.userLumpSum));
+    displayElement('fractionalOption', formatCurrency(results.userFractional));
 
-    lumpSumOptionSpan.textContent = formatCurrency(results.userLumpSum);
-    lumpSumOptionRamifySpan.textContent = getComparisonText(results.userLumpSum, results.ramifyLumpSum, false, "Lump Sum");
+    // Row 2: Ramify values & comparison badges
+    displayElement('ramifyAnnuityOptionValue', formatCurrency(results.ramifyAnnuity));
+    displayElement('ramifyAnnuityOptionPercent', formatPercentDiff(results.userAnnuity, results.ramifyAnnuity));
 
-    fractionalOptionSpan.textContent = formatCurrency(results.userFractional) + " / an";
-    fractionalOptionRamifySpan.textContent = getComparisonText(results.userFractional, results.ramifyFractional, false, "Fractional");
+    displayElement('ramifyLumpSumOptionValue', formatCurrency(results.ramifyLumpSum));
+    displayElement('ramifyLumpSumOptionPercent', formatPercentDiff(results.userLumpSum, results.ramifyLumpSum));
+
+    displayElement('ramifyFractionalOptionValue', formatCurrency(results.ramifyFractional));
+    displayElement('ramifyFractionalOptionPercent', formatPercentDiff(results.userFractional, results.ramifyFractional));
 }
 
 // --- Chart Update Function --- //
