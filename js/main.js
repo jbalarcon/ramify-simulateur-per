@@ -538,7 +538,7 @@ function getDataTabInputs() {
             let originalName = input.name;
              if (input.name.startsWith('data-')) {
                 originalName = input.name.substring(5);
-                 if(input.type === 'radio'){
+                if(input.type === 'radio'){
                      if (input.checked) {
                          currentData[originalName] = input.value;
                      }
@@ -554,7 +554,7 @@ function getDataTabInputs() {
         }
     });
 
-    // --- Convert types and perform basic validation --- 
+    // --- Convert types and perform basic validation ---
     // Expert settings are handled separately via window.settings
 
     const convertedInputs = {
@@ -962,11 +962,13 @@ function runSimulation(newInputs = null) {
      const userContractDetails = CONTRACT_DATA[inputs.contractType];
     const userProfileDetails = userContractDetails.profiles[inputs.riskProfile];
     // Get Ramify returns using the provider functions
-    const ramifyNetReturn = getRamifyNetReturn(inputs.riskProfile);
-    const ramifyGrossReturn = getRamifyGrossReturn(inputs.riskProfile);
+    // Convert profile to lowercase to match provider keys
+    const ramifyProfileKey = inputs.riskProfile.toLowerCase();
+    const ramifyNetReturn = getRamifyNetReturn(ramifyProfileKey);
+    const ramifyGrossReturn = getRamifyGrossReturn(ramifyProfileKey);
+    console.log(`[Debug] Ramify Profile Key: ${ramifyProfileKey}, Net Return: ${ramifyNetReturn}, Gross Return: ${ramifyGrossReturn}`); // DEBUG LOG
 
     const userGrowthGross = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, userProfileDetails.grossReturn, duration, userContractDetails.entryFee);
-    // Assuming Ramify entry fee is 0 as per old constant
     const ramifyGrowthGross = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, ramifyGrossReturn, duration, 0.00);
      const userGrowthNet = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, userProfileDetails.netReturn, duration, userContractDetails.entryFee);
     const ramifyGrowthNet = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, ramifyNetReturn, duration, 0.00);
@@ -1064,6 +1066,9 @@ function runSimulation(newInputs = null) {
     // --- Display Results & Update Chart --- //
     progressIndicator.style.display = 'none';
     tabNavigation.style.display = 'flex';
+    resultsDiv.style.display = 'block'; // Show the main results container
+    chartContainer.style.display = 'block'; // Show the chart container
+    ctaContainer.style.display = 'block'; // Show the CTA container
     displayResults(results);
     updateChart(results);
 
@@ -1232,7 +1237,8 @@ function updateChart(results) {
 
     const userContractDetails = CONTRACT_DATA[inputs.contractType];
     const userProfileDetails = userContractDetails.profiles[inputs.riskProfile];
-    const ramifyReturnRate = getRamifyGrossReturn(inputs.riskProfile); // Use provider
+    // Convert profile to lowercase for provider
+    const ramifyReturnRate = getRamifyGrossReturn(inputs.riskProfile.toLowerCase()); // Use provider
 
     let userCurrentCapital = inputs.initialInvestment * (1 - userContractDetails.entryFee);
     let ramifyCurrentCapital = inputs.initialInvestment * (1 - 0.00); // Assuming Ramify entry fee is 0
