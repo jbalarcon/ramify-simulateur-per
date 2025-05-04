@@ -12,9 +12,12 @@ Implémenter le simulateur PER conformément au PRD (`prd.md`), en utilisant HTM
 ├── js/
 │   └── main.js            # Logique JavaScript (calculs, UI, graphique)
 ├── css-ramify.css         # Fichier CSS fourni par le client (NE PAS MODIFIER)
-├── info-dump.md           # Données brutes, règles, contexte (source d'information)
-├── prd.md                 # Product Requirements Document (généré)
-└── plan.md                # Ce fichier
+├── simulateur-css.css         # Fichier du CSS spécifique au simulateur
+├── info-dump-old.md           # Données brutes, règles, contexte (ancienne source d'information)
+├── info-dump-new.md           # Données brutes, règles, contexte (source d'information mise à jour)
+├── prd.md                 # Product Requirements Document (généré, périmé)
+├── plan-new.md                 # Plan pour mise à jour du simulateur
+└── plan-old.md                # Plan d'attaque initial (périmé)
 ```
 
 *Note : Le fichier `css-ramify.css` est à la racine car il est fourni et on évite de le déplacer. `index.html` le liera directement.* 
@@ -191,4 +194,4 @@ Implémenter le simulateur PER conformément au PRD (`prd.md`), en utilisant HTM
 -   **Performance des Calculs :** La boucle annuelle peut être intensive. Optimiser si nécessaire (éviter recalculs redondants).
 -   **Gestion des Erreurs :** Ajouter une validation basique des inputs (ex: âge > 18, revenus >= 0) et afficher des messages d'erreur clairs si nécessaire.
 -   **Complexité des Formules :** Double-vérifier l'implémentation des formules fiscales et financières fournies.
--   **Dépendance CDN :** S'assurer que la connexion Internet est disponible pour charger Chart.js. Alternative : inclure la librairie localement. 
+-   **Dépendance CDN :** S'assurer que la connexion Internet est disponible pour charger Chart.js. Alternative : inclure la librairie localement.

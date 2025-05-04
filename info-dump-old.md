@@ -1,7 +1,4 @@
-# Contexte
-Le client est Ramify : https://www.ramify.fr/
-
-# Simulateur
+# Simulateur PER
 
 Le simulateur permettrait de calculer
 
@@ -23,12 +20,13 @@ Le simulateur permettrait de calculer
         - 100% en Capital
         - Capital fractionné sur 10 ans
 
-Et il inclurait une **comparaison avec Ramify** (”Avec Ramify vous auriez…”) en mettant en avant vos performances / frais.
+Et il inclurait une **comparaison contextuelle avec Ramify** (”Avec Ramify vous auriez…”) en mettant en avant vos performances / frais, et quelques graphs pour aider à la visualisation des résultats.
 
-Ce simulateur pourrait être très compliqué donc j’ai fait une série d’hypothèses et approximations pour essayer d’en faire au moins une première version plus "simple".
+Ce simulateur pourrait être très compliqué donc j’ai fait une série d’hypothèses et approximations pour essayer d’en faire au moins une première version plus “simple”.
 
 Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
+`Note` : vous avez potentiellement déjà certaines des formules dans le simulateur fiscalité, est-ce qu’on pourrait les réutiliser ?
 
 ---
 
@@ -67,6 +65,9 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 |  | Versements mensuels | Convertir en versement annuel : Versement annuel = Versement mensuel × 12. | Simplification pour uniformiser les calculs. | - |
 |  | Ajustement des versements | Versement année n = Versement initial × (1 + Progression)^(n-1). | Ajustement proportionnel à l’évolution des revenus. | Simplification : suppose une progression linéaire des versements. |
 | **Plafond de déduction** | Salarié / Retraité | 10 % × Revenu imposable, min 4 114 €, max 35 194 €. | Règle fiscale standard (DGFiP, 2025). | - |
+|  | Indépendant | Abattement moyen de 40 % → Revenu net = Revenu × (1 - 40 %) → Plafond = 10 % × Revenu net + 15 % × (Revenu net - PASS, si > PASS). | Approximation pour BNC/BIC/BA (moyenne entre 34 %, 50 %, 87 %). | Simplification : abattement moyen pour éviter des calculs complexes par régime fiscal.
+
+`Note: j’avais des résultats loin de la réalité avec ça donc vaut mieux faire comme ci-dessous ?` |
 |  | Indépendant | **Calcul réglementaire TNS :** 10% du bénéfice imposable (limité à 8 PASS) + 15% de la quote-part du bénéfice comprise entre 1 et 8 PASS. Minimum spécifique TNS (~4.6k€) et Plafond spécifique TNS (~85k€). **Note:** Utiliser le revenu net fourni comme proxy du bénéfice imposable. | Règle fiscale TNS (Code général des impôts). Calcul plus précis mais utilise le revenu net comme base (approximation). | Remplacement de l'approximation par le calcul réglementaire pour plus de précision. |
 | **Impôt sur le revenu** | Barème 2025 | 0 € - 11 294 € : 0 % ; 11 294 € - 28 797 € : 11 % ; 28 797 € - 82 341 € : 30 % ; 82 341 € - 177 106 € : 41 % ; > 177 106 € : 45 %. | Barème officiel 2025 (DGFiP, ajusté pour inflation). | - |
 |  | Ajustement des tranches | Augmentation de 1,5 %/an (inflation). | Hypothèse basée sur l’inflation moyenne (INSEE). | Simplification : progression fixe (pas d’ajustement pour politiques fiscales futures). |
@@ -85,12 +86,12 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
 ## Inputs et Outputs du simulateur
 
-`Note : en bullets points d'abord avec qques indications, puis il y a un tableau, puis formules et pseudo-code après pour faciliter l'implémentation`
+`Note : en bullets points d’abord avec qques indications, puis il y a un tableau, puis formules et pseudo-code après pour faciliter l’implémentation`
 
 ### Inputs
 
 - Âge
-    - Hypothèse d'âge départ retraite : 64 ans
+    - Hypothèse d’âge départ retraite : 64 ans
 - Situation professionnelle
     - Salarié
     - Retraité
@@ -99,29 +100,29 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 - Frais réels (oui/non)
     - Si non, abattement forfaitaire de 10 % (mais maximum = 14 426 €; minimum 504 €) sur les revenus
     - Si oui, demander le montant annuel des frais réels, et en faire la déduction sur les revenus
-    - Tooltip : "Si vous optez pour les frais réels lors de votre déclaration d'impôt (par exemple, frais de trajet, repas), cochez 'Oui' et indiquez le montant annuel."
+    - Tooltip : "Si vous optez pour les frais réels lors de votre déclaration d’impôt (par exemple, frais de trajet, repas), cochez ‘Oui’ et indiquez le montant annuel.”
 - Revenus nets avant impôts du foyer
 - Nombre parts fiscales foyer
-    - Tooltip : "Le nombre de parts dépend de votre situation familiale (1 pour un célibataire, 2 pour un couple, +0,5 par enfant, etc.)."
+    - Tooltip : "Le nombre de parts dépend de votre situation familiale (1 pour un célibataire, 2 pour un couple, +0,5 par enfant, etc.).”
 - Evolution revenu
     - Pour Retraité supposer progression 1,5% / an pour inflation
     - Pour Salarié ou indépendant
         - Faible (1%)
         - Moyenne (3%)
         - Forte (5 %)
-    - Calcul : Approximation du revenu moyen sur la période mais si possible calculer l'avantage fiscal année par année (en ajustant les tranches fiscales pour l'inflation, par exemple 1,5 %/an).
-    - Tooltip : "L'évolution de vos revenus dépend de votre situation. Par exemple, 3 % correspond à l'inflation + une augmentation annuelle. Si vous ne savez pas, choisissez 'Moyenne'.
+    - Calcul : Approximation du revenu moyen sur la période mais si possible calculer l’avantage fiscal année par année (en ajustant les tranches fiscales pour l’inflation, par exemple 1,5 %/an).
+    - Tooltip : “L’évolution de vos revenus dépend de votre situation. Par exemple, 3 % correspond à l’inflation + une augmentation annuelle. Si vous ne savez pas, choisissez ‘Moyenne’.”
 - PER déjà ouvert ou pas
     - Si oui :
         - Investissement initial
         - versements déjà effectués en 2025
-        - versements mensuels prévus jusqu'à votre retraite
+        - versements mensuels prévus jusqu’à votre retraite
             - convertir en versement annuel pour simplifier calcul (x12)
     - Si non :
         - Investissement initial prévu
-        - Versements mensuels prévus jusqu'à votre retraite
+        - Versements mensuels prévus jusqu’à votre retraite
             - convertir en versement annuel pour simplifier calcul (x12)
-    - Note : Si possible, augmenter les versements proportionnellement à l'augmentation estimée des revenus
+    - Note : Si possible, augmenter les versements proportionnellement à l’augmentation estimée des revenus
 - Type de contrat
     - Courtier en ligne
         - Frais entrée = 0 %
@@ -135,7 +136,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
             - Défensif : Perf : 2,8 % ; frais : 1 % ; net : 1,8 %
             - Equilibré : Perf : 4,15 % ; frais : 1,45 % ; net : 2,7 %
             - Agressif : Perf : 5,5 % ; frais : 1,9 % ; net : 3,6 %
-    - Ramify n'est pas visible comme option dans l'input "Type de contrat", mais est utilisé en interne pour la comparaison.
+    - Ramify n’est pas visible comme option dans l’input "Type de contrat", mais est utilisé en interne pour la comparaison.
 - Profil / Répartition
     - Défensif (100% fonds euros)
     - Equilibré (50% fonds euros / 50 % UC)
@@ -144,21 +145,21 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
 ### Outputs
 
-- Sur l'année en cours
-    - Impôts sur l'année sans / avec PER, effort épargne réel correspondant
-    - TMI et taux moyen d'imposition
+- Sur l’année en cours
+    - Impôts sur l’année sans / avec PER, effort épargne réel correspondant
+    - TMI et taux moyen d’imposition
     - Plafond déduction
         - Supposer un abattement moyen de 40 % sur les revenus des indépendants (approximation pour BNC/BIC/BA) et calculer le plafond sur cette base.
-- A l'échéance (retraite)
+- A l’échéance (retraite)
     - Capital total brut
         - Total versements
         - Plus value
     - Capital net frais et impôts
         - Impact frais
         - Impact impôts
-        - Economie d'impôt réalisée
+        - Economie d’impôt réalisée
         - Effort épargne réel
-        - Supposer TMI à la retraite = à la TMI actuelle, ajustée pour l'évolution des revenus
+        - Supposer TMI à la retraite = à la TMI actuelle, ajustée pour l’évolution des revenus
 - Montant capital pour the 3 types de sortie
     - 100% en Rente
     - 100% en Capital
@@ -167,55 +168,57 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
         - PFU (30 %) pour la plus-value dans tous les cas.
         - TMI à la retraite égale à la TMI finale (après progression des revenus).
         - Pour la rente, taux de conversion fixe (par exemple, 4 %) et appliquez une fiscalité simplifiée (40 % imposable au barème + 17,2 % de prélèvements sociaux).
-- Comparaison avec Ramify à inclure pour tous les outputs impactés ("Avec Ramify vous auriez…" )
+- Comparaison avec Ramify à inclure pour tous les outputs impactés (”Avec Ramify vous auriez…” )
     - Défensif : 2,1 % ; frais : 0,7 % ; Net : 2,1 %
     - Équilibré : 7,23 % ; frais : 1,15 % ; Net : 6,1 %
     - Agressif : 11,66 % ; frais : 1,15 % ; Net : 10,51 %
+- Graphs dans le style des simulateurs concurrents pour aider à la visualisation, + autres graphs que vous pensez être pertinents
+    
     
 
 ### Tableau des Inputs/Outputs
 
 | **Nom** | **Type** | **Tooltip** | **Description** | **Valeurs possibles** | **Dépendances** |
 | --- | --- | --- | --- | --- | --- |
-| Âge | Input | Indiquez votre âge actuel. | Âge de l'utilisateur, utilisé pour calculer la durée d'épargne jusqu'à la retraite. | 18-64 ans | - |
-| Situation professionnelle | Input | Quelle est votre situation professionnelle ? | Permet d'ajuster le plafond de déductibilité et les abattements sur les revenus. | Salarié / Retraité / Indépendant | - |
+| Âge | Input | Indiquez votre âge actuel. | Âge de l’utilisateur, utilisé pour calculer la durée d’épargne jusqu’à la retraite. | 18-64 ans | - |
+| Situation professionnelle | Input | Quelle est votre situation professionnelle ? | Permet d’ajuster le plafond de déductibilité et les abattements sur les revenus. | Salarié / Retraité / Indépendant | - |
 |  |  | Par exemple : professions libérales, commerçants, artisans, agriculteurs. | (Tooltip spécifique pour "Indépendant") |  |  |
-| Évolution des revenus | Input | Quelle est l'évolution annuelle estimée de vos revenus ? | Permet d'ajuster les revenus et les versements futurs pour refléter la progression des revenus. | Faible (1 %) / Moyenne (3 %) / Forte (5 %) | Situation professionnelle (non demandé pour Retraité, progression fixée à 1,5 %) |
-|  |  | L'évolution de vos revenus dépend de votre situation. Par exemple, 3 % correspond à l'inflation + une augmentation annuelle. Si vous ne savez pas, choisissez 'Moyenne'. | (Tooltip pour l'utilisateur) |  |  |
-| Type de contrat | Input | Quel type de contrat PER choisissez-vous ? | Détermine les frais d'entrée et les rendements nets en fonction du type de contrat. Ramify est utilisé en interne pour la comparaison, mais non visible comme option. | Courtier en ligne / Banque ou Assureur traditionnel | - |
+| Évolution des revenus | Input | Quelle est l’évolution annuelle estimée de vos revenus ? | Permet d’ajuster les revenus et les versements futurs pour refléter la progression des revenus. | Faible (1 %) / Moyenne (3 %) / Forte (5 %) | Situation professionnelle (non demandé pour Retraité, progression fixée à 1,5 %) |
+|  |  | L’évolution de vos revenus dépend de votre situation. Par exemple, 3 % correspond à l’inflation + une augmentation annuelle. Si vous ne savez pas, choisissez ‘Moyenne’. | (Tooltip pour l’utilisateur) |  |  |
+| Type de contrat | Input | Quel type de contrat PER choisissez-vous ? | Détermine les frais d’entrée et les rendements nets en fonction du type de contrat. Ramify est utilisé en interne pour la comparaison, mais non visible comme option. | Courtier en ligne / Banque ou Assureur traditionnel | - |
 | Profil / Répartition | Input | Quel est votre profil de risque ? | Détermine le rendement net en fonction de la répartition entre fonds euros et unités de compte (UC). | Défensif (100 % fonds euros) / Équilibré (50 % fonds euros / 50 % UC) / Agressif (100 % UC) | Type de contrat |
-|  |  | Défensif : sécurité maximale, mais rendement plus faible ; Équilibré : compromis entre sécurité et performance ; Agressif : potentiel de rendement élevé, mais plus risqué. | (Tooltip pour l'utilisateur) |  |  |
-| Revenus nets avant impôts du foyer | Input | Indiquez vos revenus nets annuels avant impôt sur le revenu (après prélèvements sociaux, comme indiqué sur votre avis d'imposition). | Revenus nets du foyer, utilisés pour calculer le revenu imposable et la TMI. | 0 € et plus | - |
-| Nombre de parts fiscales du foyer | Input | Indiquez le nombre de parts fiscales de votre foyer. | Permet de calculer la TMI et le taux moyen d'imposition. | 1 et plus (décimales possibles, ex. 1,5) | - |
-|  |  | Le nombre de parts dépend de votre situation familiale (1 pour un célibataire, 2 pour un couple, +0,5 par enfant, etc.). | (Tooltip pour l'utilisateur) |  |  |
-| Frais réels | Input | Optez-vous pour les frais réels lors de votre déclaration d'impôt ? | Permet de calculer le revenu imposable en déduisant les frais professionnels. | Oui / Non | Revenus nets avant impôts du foyer |
-|  |  | Si vous optez pour les frais réels lors de votre déclaration d'impôt (par exemple, frais de trajet, repas), cochez 'Oui' et indiquez le montant annuel. | (Tooltip pour l'utilisateur) |  |  |
+|  |  | Défensif : sécurité maximale, mais rendement plus faible ; Équilibré : compromis entre sécurité et performance ; Agressif : potentiel de rendement élevé, mais plus risqué. | (Tooltip pour l’utilisateur) |  |  |
+| Revenus nets avant impôts du foyer | Input | Indiquez vos revenus nets annuels avant impôt sur le revenu (après prélèvements sociaux, comme indiqué sur votre avis d’imposition). | Revenus nets du foyer, utilisés pour calculer le revenu imposable et la TMI. | 0 € et plus | - |
+| Nombre de parts fiscales du foyer | Input | Indiquez le nombre de parts fiscales de votre foyer. | Permet de calculer la TMI et le taux moyen d’imposition. | 1 et plus (décimales possibles, ex. 1,5) | - |
+|  |  | Le nombre de parts dépend de votre situation familiale (1 pour un célibataire, 2 pour un couple, +0,5 par enfant, etc.). | (Tooltip pour l’utilisateur) |  |  |
+| Frais réels | Input | Optez-vous pour les frais réels lors de votre déclaration d’impôt ? | Permet de calculer le revenu imposable en déduisant les frais professionnels. | Oui / Non | Revenus nets avant impôts du foyer |
+|  |  | Si vous optez pour les frais réels lors de votre déclaration d’impôt (par exemple, frais de trajet, repas), cochez ‘Oui’ et indiquez le montant annuel. | (Tooltip pour l’utilisateur) |  |  |
 | Montant des frais réels | Input | Indiquez le montant annuel de vos frais réels. | Montant des frais réels à déduire des revenus nets pour calculer le revenu imposable. | 0 € et plus (si Frais réels = Oui) | Frais réels |
-| PER déjà ouvert | Input | Avez-vous déjà ouvert un PER ? | Permet de distinguer les utilisateurs avec un PER existant de ceux qui envisagent d'en ouvrir un. | Oui / Non | - |
-| Investissement initial | Input | Quel est l'investissement initial de votre PER ? (si PER déjà ouvert) | Capital initial déjà investi dans le PER (si PER déjà ouvert). | 0 € et plus | PER déjà ouvert |
-|  |  | Quel est l'investissement initial prévu pour votre PER ? (si PER non ouvert) | Capital initial prévu pour le PER (si PER non ouvert). |  |  |
-| Versements déjà effectués en 2025 | Input | Quel est le montant des versements déjà effectués en 2025 ? | Versements effectués dans l'année en cours (2025), pour les PER déjà ouverts. | 0 € et plus | PER déjà ouvert |
-| Versements mensuels prévus | Input | Combien prévoyez-vous de verser chaque mois jusqu'à votre départ à la retraite ? | Versements mensuels prévus jusqu'à la retraite, convertis en versements annuels pour les calculs. | 0 € et plus | - |
-| Impôts sur l'année sans PER | Output | Impôt sur le revenu estimé pour l'année en cours sans PER. | Impôt calculé sur le revenu imposable sans déduction des versements PER. | - | Revenus nets, Nombre de parts fiscales, Frais réels, Montant des frais réels |
-| Impôts sur l'année avec PER | Output | Impôt sur le revenu estimé pour l'année en cours avec PER. | Impôt calculé après déduction des versements PER pour l'année en cours. | - | Impôts sans PER, Versements annuels (2025) |
-| Effort d'épargne réel (année en cours) | Output | Effort d'épargne réel pour l'année en cours. | Versements effectués dans l'année en cours, ajustés pour l'économie d'impôt. | - | Impôts sans/avec PER, Versements annuels (2025) |
-| TMI | Output | Votre tranche marginale d'imposition (TMI) pour l'année en cours. | TMI basée sur le revenu imposable et le nombre de parts fiscales. | - | Revenus nets, Nombre de parts fiscales, Frais réels, Montant des frais réels |
-| Taux moyen d'imposition | Output | Votre taux moyen d'imposition pour l'année en cours. | Taux moyen d'imposition basé sur l'impôt total et le revenu imposable. | - | Impôts sans PER, Revenus nets, Frais réels, Montant des frais réels |
-| Plafond de déduction | Output | Votre plafond de déductibilité pour les versements PER. | Plafond de déduction fiscale pour les versements PER, basé sur les revenus et la situation professionnelle (Calcul réglementaire TNS appliqué si Indépendant). | - | Situation professionnelle, Revenus nets, Frais réels, Montant des frais réels |
+| PER déjà ouvert | Input | Avez-vous déjà ouvert un PER ? | Permet de distinguer les utilisateurs avec un PER existant de ceux qui envisagent d’en ouvrir un. | Oui / Non | - |
+| Investissement initial | Input | Quel est l’investissement initial de votre PER ? (si PER déjà ouvert) | Capital initial déjà investi dans le PER (si PER déjà ouvert). | 0 € et plus | PER déjà ouvert |
+|  |  | Quel est l’investissement initial prévu pour votre PER ? (si PER non ouvert) | Capital initial prévu pour le PER (si PER non ouvert). |  |  |
+| Versements déjà effectués en 2025 | Input | Quel est le montant des versements déjà effectués en 2025 ? | Versements effectués dans l’année en cours (2025), pour les PER déjà ouverts. | 0 € et plus | PER déjà ouvert |
+| Versements mensuels prévus | Input | Combien prévoyez-vous de verser chaque mois jusqu’à votre départ à la retraite ? | Versements mensuels prévus jusqu’à la retraite, convertis en versements annuels pour les calculs. | 0 € et plus | - |
+| Impôts sur l’année sans PER | Output | Impôt sur le revenu estimé pour l’année en cours sans PER. | Impôt calculé sur le revenu imposable sans déduction des versements PER. | - | Revenus nets, Nombre de parts fiscales, Frais réels, Montant des frais réels |
+| Impôts sur l’année avec PER | Output | Impôt sur le revenu estimé pour l’année en cours avec PER. | Impôt calculé après déduction des versements PER pour l’année en cours. | - | Impôts sans PER, Versements annuels (2025) |
+| Effort d’épargne réel (année en cours) | Output | Effort d’épargne réel pour l’année en cours. | Versements effectués dans l’année en cours, ajustés pour l’économie d’impôt. | - | Impôts sans/avec PER, Versements annuels (2025) |
+| TMI | Output | Votre tranche marginale d’imposition (TMI) pour l’année en cours. | TMI basée sur le revenu imposable et le nombre de parts fiscales. | - | Revenus nets, Nombre de parts fiscales, Frais réels, Montant des frais réels |
+| Taux moyen d’imposition | Output | Votre taux moyen d’imposition pour l’année en cours. | Taux moyen d’imposition basé sur l’impôt total et le revenu imposable. | - | Impôts sans PER, Revenus nets, Frais réels, Montant des frais réels |
+| Plafond de déduction | Output | Votre plafond de déductibilité pour les versements PER. | Plafond de déduction fiscale pour les versements PER, basé sur les revenus et la situation professionnelle. | - | Situation professionnelle, Revenus nets, Frais réels, Montant des frais réels |
 | Capital total brut | Output | Capital accumulé à la retraite (brut). | Somme des versements et des gains, avant frais et impôts. | - | Âge, Type de contrat, Profil, Investissement initial, Versements annuels |
 |  |  | Comparaison avec Ramify : Avec Ramify, vous auriez… | Comparaison avec Ramify pour le capital brut, total versements, plus-value, capital net, impact frais, impact impôts, et types de sortie. | - | Type de contrat |
-| Total versements | Output | Total des versements effectués jusqu'à la retraite. | Somme de tous les versements (initial + annuels) sur la durée d'épargne. | - | Investissement initial, Versements annuels, Âge, Type de contrat |
+| Total versements | Output | Total des versements effectués jusqu’à la retraite. | Somme de tous les versements (initial + annuels) sur la durée d’épargne. | - | Investissement initial, Versements annuels, Âge, Type de contrat |
 |  |  | Comparaison avec Ramify : Avec Ramify, vous auriez… | Comparaison avec Ramify pour le total des versements. | - | Type de contrat |
 | Plus-value | Output | Plus-value générée par votre PER à la retraite. | Gains générés par les investissements (capital total brut - total versements). | - | Capital total brut, Total versements |
 |  |  | Comparaison avec Ramify : Avec Ramify, vous auriez… | Comparaison avec Ramify pour la plus-value. | - | Type of contrat |
 | Capital net de frais et impôts | Output | Capital net après frais et impôts à la retraite. | Capital total brut, ajusté pour les frais (déjà inclus dans le rendement net) et les impôts à la sortie. | - | Capital total brut, TMI à la retraite |
 |  |  | Comparaison avec Ramify : Avec Ramify, vous auriez… | Comparaison avec Ramify pour le capital net. | - | Type de contrat |
 | Impact frais | Output | Impact des frais sur votre capital à la retraite. | Différence entre le capital brut sans frais et le capital net (frais déjà inclus dans le rendement net). | - | Capital total brut, Type de contrat, Profil |
-|  |  | Comparaison avec Ramify : Avec Ramify, l'impact des frais serait… | Comparaison avec Ramify pour l'impact des frais. | - | Type de contrat |
+|  |  | Comparaison avec Ramify : Avec Ramify, l’impact des frais serait… | Comparaison avec Ramify pour l’impact des frais. | - | Type de contrat |
 | Impact impôts | Output | Impact des impôts à la sortie sur votre capital. | Impôts estimés à la sortie (sur les versements et la plus-value). | - | Capital total brut, Total versements, TMI à la retraite |
-|  |  | Comparaison avec Ramify : Avec Ramify, l'impact des impôts serait… | Comparaison avec Ramify pour l'impact des impôts. | - | Type de contrat |
-| Économie d'impôt réalisée | Output | Économie d'impôt totale réalisée sur toute la période. | Somme des économies d'impôt annuelles sur toute la durée d'épargne. | - | Impôts sans/avec PER (chaque année), Âge |
-| Effort d'épargne réel (total) | Output | Effort d'épargne réel sur toute la période. | Total des versements, ajusté pour l'économie d'impôt totale. | - | Total versements, Économie d'impôt réalisée |
+|  |  | Comparaison avec Ramify : Avec Ramify, l’impact des impôts serait… | Comparaison avec Ramify pour l’impact des impôts. | - | Type de contrat |
+| Économie d’impôt réalisée | Output | Économie d’impôt totale réalisée sur toute la période. | Somme des économies d’impôt annuelles sur toute la durée d’épargne. | - | Impôts sans/avec PER (chaque année), Âge |
+| Effort d’épargne réel (total) | Output | Effort d’épargne réel sur toute la période. | Total des versements, ajusté pour l’économie d’impôt totale. | - | Total versements, Économie d’impôt réalisée |
 | Capital en rente (100 %) | Output | Montant annuel si sortie 100 % en rente. | Rente annuelle estimée à partir du capital net, avec un taux de conversion fixe. | - | Capital net de frais et impôts |
 |  |  | Comparaison avec Ramify : Avec Ramify, vous auriez… | Comparaison avec Ramify pour la rente. | - | Type de contrat |
 | Capital en capital (100 %) | Output | Montant si sortie 100 % en capital. | Capital net après impôts, si sortie en une seule fois. | - | Capital net de frais et impôts |
@@ -230,7 +233,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
 `(Formules à vérifier par expert Ramify également svp)`
 
-**Étape 1 : Calculer la durée d'épargne**
+**Étape 1 : Calculer la durée d’épargne**
 
 - **Formule** : Durée = 64 - Âge.
 - **Hypothèse** : Âge de départ à la retraite = 64 ans.
@@ -240,7 +243,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     `durée = 64 - âge`
     
 
-**Étape 2 : Calculer l'évolution des revenus et le revenu moyen**
+**Étape 2 : Calculer l’évolution des revenus et le revenu moyen**
 
 - **Règle** :
     - Si Situation professionnelle = Retraité : Progression = 1,5 %/an (inflation).
@@ -291,11 +294,11 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     ```
     
 
-**Étape 4 : Calculer la TMI et le taux moyen d'imposition (chaque année)**
+**Étape 4 : Calculer la TMI et le taux moyen d’imposition (chaque année)**
 
 - **Formule** :
     - Quotient familial année n = Revenu imposable année n ÷ Nombre de parts fiscales.
-    - Appliquer le barème progressif de l'impôt sur le revenu (ajusté pour l'inflation : tranches augmentent de 1,5 %/an).
+    - Appliquer le barème progressif de l’impôt sur le revenu (ajusté pour l’inflation : tranches augmentent de 1,5 %/an).
     - TMI = tranche correspondant au quotient familial.
     - Impôt année n = Somme des tranches appliquées au revenu imposable.
     - Taux moyen = Impôt année n ÷ Revenu imposable année n.
@@ -310,7 +313,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     ```
     for (année = 1; année <= durée; année++) {
       quotient = revenu_imposable[année] / nombre_parts
-      // Ajuster les tranches pour l'inflation (1,5 %/an)
+      // Ajuster les tranches pour l’inflation (1,5 %/an)
       tranche_0_11294 = 11294 * (1 + 0.015)^(année-1)
       tranche_11294_28797 = 28797 * (1 + 0.015)^(année-1)
       tranche_28797_82341 = 82341 * (1 + 0.015)^(année-1)
@@ -321,7 +324,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
       else if (quotient <= tranche_28797_82341) tmi[année] = 0.30
       else if (quotient <= tranche_82341_177106) tmi[année] = 0.41
       else tmi[année] = 0.45
-      // Calculer l'impôt
+      // Calculer l’impôt
       impôt = 0
       if (quotient > tranche_0_11294) {
         impôt += (min(quotient, tranche_11294_28797) - tranche_0_11294) * 0.11
@@ -347,7 +350,8 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
 - **Règle** :
     - Si Salarié ou Retraité : Plafond = 10 % × Revenu imposable année n, min 4 114 €, max 35 194 €.
-    - Si Indépendant (TNS) : 
+    - Si Indépendant : Abattement moyen de 40 % → Revenu net = Revenu année n × (1 - 40 %) → Plafond = 10 % × Revenu net + 15 % × (Revenu net - PASS, si > PASS), min 4 114 €, max 35 194 €. `(avec approx mentionnée dans le tableau 1)`
+    - Si Indépendant (TNS) :
         - Bénéfice imposable = Revenu année n (approximation utilisant le revenu net fourni).
         - Plafond partie 1 = 10 % × Bénéfice imposable, limité à 10% × 8 × PASS.
         - Plafond partie 2 = 15 % × (Bénéfice imposable - PASS), si Bénéfice imposable > PASS. Cette partie est limitée à 15% × (8 × PASS - PASS).
@@ -355,6 +359,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
         - Appliquer Plafond minimum TNS (ex: 4 637 € pour 2024, utiliser ~4.9k€ pour 2025 approx) et Plafond maximum TNS (ex: 85 780 € pour 2024, utiliser ~91k€ pour 2025 approx).
 - **Exemple (année 1)** :
     - Salarié, Revenu imposable = 54 000 € → Plafond = 10 % × 54 000 € = 5 400 €.
+    - Indépendant, Revenu année 1 = 60 000 € → Revenu net = 60 000 € × (1 - 40 %) = 36 000 € → Plafond = 10 % × 36 000 € = 3 600 € (ajusté à 4 114 €, minimum). `(avec approx mentionnée dans le tableau 1)`
     - Indépendant, Revenu année 1 = 60 000 € (proxy bénéfice), PASS = 46 368 €
         - Partie 1 = 10% * 60 000 = 6 000 € (inférieur à 10% * 8 * PASS, donc OK)
         - Partie 2 = 15% * (60 000 - 46 368) = 15% * 13 632 = 2 044,8 €
@@ -363,33 +368,32 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     
     ```
     PASS_COURANT = 46368 * (1 + INFLATION_RATE)^(année-1) // Ajuster PASS pour l'année
-    PASS_8 = PASS_COURANT * 8
-    PLAFOND_MIN_SALARIE = 4114 * (1 + INFLATION_RATE)^(année-1)
-    PLAFOND_MAX_SALARIE = 35194 * (1 + INFLATION_RATE)^(année-1)
-    // Utiliser les valeurs 2024 comme ref, ajustées pour 2025+ inflation
-    PLAFOND_MIN_TNS = 4637 * (1 + INFLATION_RATE)^(année-1) 
-    PLAFOND_MAX_TNS = 85780 * (1 + INFLATION_RATE)^(année-1)
-    
-    for (année = 1; année <= durée; année++) {
-      if (situation_professionnelle == "Salarié" || situation_professionnelle == "Retraité") {
-        plafond = 0.1 * revenu_imposable[année]
-        if (plafond < PLAFOND_MIN_SALARIE) plafond = PLAFOND_MIN_SALARIE
-        if (plafond > PLAFOND_MAX_SALARIE) plafond = PLAFOND_MAX_SALARIE
-      } else { // Indépendant (TNS)
-        benefice_imposable = revenu[année] // Approximation
-        plafond_partie1 = 0.10 * min(benefice_imposable, PASS_8)
-        plafond_partie2 = 0
-        if (benefice_imposable > PASS_COURANT) {
-           tranche_partie2 = min(benefice_imposable, PASS_8) - PASS_COURANT
-           plafond_partie2 = 0.15 * max(0, tranche_partie2) 
+        PASS_8 = PASS_COURANT * 8
+        PLAFOND_MIN_SALARIE = 4114 * (1 + INFLATION_RATE)^(année-1)
+        PLAFOND_MAX_SALARIE = 35194 * (1 + INFLATION_RATE)^(année-1)
+        // Utiliser les valeurs 2024 comme ref, ajustées pour 2025+ inflation
+        PLAFOND_MIN_TNS = 4637 * (1 + INFLATION_RATE)^(année-1) 
+        PLAFOND_MAX_TNS = 85780 * (1 + INFLATION_RATE)^(année-1)
+        
+        for (année = 1; année <= durée; année++) {
+          if (situation_professionnelle == "Salarié" || situation_professionnelle == "Retraité") {
+            plafond = 0.1 * revenu_imposable[année]
+            if (plafond < PLAFOND_MIN_SALARIE) plafond = PLAFOND_MIN_SALARIE
+            if (plafond > PLAFOND_MAX_SALARIE) plafond = PLAFOND_MAX_SALARIE
+          } else { // Indépendant (TNS)
+            benefice_imposable = revenu[année] // Approximation
+            plafond_partie1 = 0.10 * min(benefice_imposable, PASS_8)
+            plafond_partie2 = 0
+            if (benefice_imposable > PASS_COURANT) {
+               tranche_partie2 = min(benefice_imposable, PASS_8) - PASS_COURANT
+               plafond_partie2 = 0.15 * max(0, tranche_partie2) 
+            }
+            plafond = plafond_partie1 + plafond_partie2
+            if (plafond < PLAFOND_MIN_TNS) plafond = PLAFOND_MIN_TNS
+            if (plafond > PLAFOND_MAX_TNS) plafond = PLAFOND_MAX_TNS
+          }
+          plafond_déduction[année] = plafond
         }
-        plafond = plafond_partie1 + plafond_partie2
-        if (plafond < PLAFOND_MIN_TNS) plafond = PLAFOND_MIN_TNS
-        if (plafond > PLAFOND_MAX_TNS) plafond = PLAFOND_MAX_TNS
-      }
-      plafond_déduction[année] = plafond
-    }
-    
     ```
     
 
@@ -397,7 +401,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
 - **Règle** :
     - Versement annuel = Versement mensuel × 12.
-    - Si possible, augmenter proportionnellement à l'évolution des revenus : Versement année n = Versement initial × (1 + Progression)^(n-1).
+    - Si possible, augmenter proportionnellement à l’évolution des revenus : Versement année n = Versement initial × (1 + Progression)^(n-1).
 - **Exemple** :
     - Versement mensuel = 500 € → Versement initial = 500 € × 12 = 6 000 €.
     - Progression = 3 % → Versement année 1 = 6 000 €, année 2 = 6 000 € × 1,03 = 6 180 €, année 20 = 6 000 € × (1,03)^19 ≈ 10 840 €.
@@ -412,25 +416,25 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     ```
     
 
-**Étape 7 : Calculer l'impôt avec PER et l'effort d'épargne (chaque année)**
+**Étape 7 : Calculer l’impôt avec PER et l’effort d’épargne (chaque année)**
 
 - **Règle** :
     - Versement déductible année n = min(Versement année n, Plafond déduction année n).
     - Revenu imposable avec PER = Revenu imposable année n - Versement déductible année n.
-    - Recalculer l'impôt avec le nouveau revenu imposable (même méthode qu'à l'étape 4).
+    - Recalculer l’impôt avec le nouveau revenu imposable (même méthode qu’à l’étape 4).
 - **Exemple (année 1)** :
     - Versement = 6 000 €, Plafond = 5 400 € → Versement déductible = 5 400 €.
     - Revenu imposable avec PER = 54 000 € - 5 400 € = 48 600 €.
     - Impôt sans PER = 3 455 € → Quotient avec PER = 48 600 € ÷ 2 = 24 300 € → Impôt avec PER = (11 294 € × 0 %) + (24 300 € - 11 294 €) × 11 % × 2 ≈ 2 860 €.
-    - Économie d'impôt = 3 455 € - 2 860 € = 595 €.
-    - Effort d'épargne = 6 000 € - 595 € = 5 405 €.
+    - Économie d’impôt = 3 455 € - 2 860 € = 595 €.
+    - Effort d’épargne = 6 000 € - 595 € = 5 405 €.
 - **Pseudo-code** :
     
     ```
     for (année = 1; année <= durée; année++) {
       versement_déductible = min(versement[année], plafond_déduction[année])
       revenu_imposable_avec_PER = revenu_imposable[année] - versement_déductible
-      // Recalculer l'impôt (même méthode qu'à l'étape 4)
+      // Recalculer l’impôt (même méthode qu’à l’étape 4)
       quotient = revenu_imposable_avec_PER / nombre_parts
       impôt = 0
       if (quotient > tranche_0_11294) {
@@ -457,13 +461,13 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 **Étape 8 : Calculer le capital total brut**
 
 - **Formule** :
-    - Capital initial = Investissement initial × (1 - Frais d'entrée) × (1 + Rendement net)^Durée.
-    - Versements = Somme des versements annuels, chacun composé : Versement année n × (1 - Frais d'entrée) × (1 + Rendement net)^(Durée - n).
+    - Capital initial = Investissement initial × (1 - Frais d’entrée) × (1 + Rendement net)^Durée.
+    - Versements = Somme des versements annuels, chacun composé : Versement année n × (1 - Frais d’entrée) × (1 + Rendement net)^(Durée - n).
     - Capital total brut = Capital initial + Versements.
 - **Rendement net de frais** (dépend de Type de contrat et Profil) :
     - Courtier en ligne : Défensif 2,1 %, Équilibré 3,0 %, Agressif 3,9 %.
     - Banque/assureur traditionnel : Défensif 1,8 %, Équilibré 2,7 %, Agressif 3,6 %.
-- **Frais d'entrée** :
+- **Frais d’entrée** :
     - Courtier en ligne : 0 %.
     - Banque/assureur traditionnel : 2 %.
 - **Exemple** :
@@ -500,15 +504,15 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     ```
     
 
-**Étape 9 : Calculer l'économie d'impôt totale et l'effort d'épargne réel**
+**Étape 9 : Calculer l’économie d’impôt totale et l’effort d’épargne réel**
 
 - **Formule** :
-    - Économie d'impôt totale = Somme des économies d'impôt annuelles.
-    - Effort d'épargne réel = Total versements - Économie d'impôt totale.
+    - Économie d’impôt totale = Somme des économies d’impôt annuelles.
+    - Effort d’épargne réel = Total versements - Économie d’impôt totale.
 - **Exemple** :
-    - Économie d'impôt année 1 = 595 €, …, année 20 (TMI 30 %) = 10 840 € × 30 % ≈ 3 252 €.
+    - Économie d’impôt année 1 = 595 €, …, année 20 (TMI 30 %) = 10 840 € × 30 % ≈ 3 252 €.
     - Total (approximation) : 1 767 €/an (moyen) × 20 = 35 340 €.
-    - Effort d'épargne = (10 000 € + 161 614 €) - 35 340 € = 136 274 €.
+    - Effort d’épargne = (10 000 € + 161 614 €) - 35 340 € = 136 274 €.
 - **Pseudo-code** :
     
     ```
@@ -545,7 +549,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 - **Pseudo-code** :
     
     ```
-    // Calcul de l'impact des frais
+    // Calcul de l’impact des frais
     if (type_contrat == "Courtier en ligne") {
       if (profil == "Défensif") rendement_brut = 0.028
       else if (profil == "Équilibré") rendement_brut = 0.0415
@@ -578,16 +582,16 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     - Défensif : 2,1 %.
     - Équilibré : 6,1 %.
     - Agressif : 10,51 %.
-- **Frais d'entrée** : 0 %.
+- **Frais d’entrée** : 0 %.
 - **Outputs concernés** : Total versements, Capital total brut, Plus-value, Capital net de frais et impôts, Impact frais, Impact impôts, 3 types of sortie.
 - **Formule** :
     - Recalculer chaque output pour Ramify en utilisant le rendement net correspondant
-        - Total versements : Comparer directement (frais d'entrée identiques).
+        - Total versements : Comparer directement (frais d’entrée identiques).
         - Plus-value : plus_value_ramify = capital_total_brut_ramify - total_versements.
         - Capital net : Recalculer avec la fiscalité (même TMI et PFU).
         - Impact frais : Recalculer avec le rendement brut de Ramify (7,23 %).
         - Types de sortie : Recalculer à partir du capital net de Ramify.
-    - Calculer la différence en pourcentage par rapport à l'output de l'utilisateur.
+    - Calculer la différence en pourcentage par rapport à l’output de l’utilisateur.
 - **Exemple** :
     - Ramify, Profil Équilibré (6,1 %) :
         - Capital initial = 10 000 € × (1,061)^20 ≈ 32 071 €.
@@ -598,7 +602,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
     
     ```
     // Comparaison pour Total versements
-    total_versements_ramify = total_versements // Frais d'entrée identiques (0 %)
+    total_versements_ramify = total_versements // Frais d’entrée identiques (0 %)
     différence_total_versements = (total_versements_ramify - total_versements) / total_versements * 100
     
     // Comparaison pour Capital total brut
@@ -683,7 +687,7 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
 ## Annexe : Références et hypothèses globales
 
-- **Barème de l'impôt sur le revenu 2025** :
+- **Barème de l’impôt sur le revenu 2025** :
     - 0 € - 11 294 € : 0 %.
     - 11 294 € - 28 797 € : 11 %.
     - 28 797 € - 82 341 € : 30 %.
@@ -701,38 +705,38 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
         - Défensif : Rendement brut 2,8 %, Frais 0,7 %, Net 2,1 %.
         - Équilibré : Rendement brut 4,15 %, Frais 1,15 %, Net 3,0 %.
         - Agressif : Rendement brut 5,5 %, Frais 1,6 %, Net 3,9 %.
-        - Frais d'entrée : 0 %.
+        - Frais d’entrée : 0 %.
     - **Banque ou Assureur traditionnel** :
         - Défensif : Rendement brut 2,8 %, Frais 1,0 %, Net 1,8 %.
         - Équilibré : Rendement brut 4,15 %, Frais 1,45 %, Net 2,7 %.
         - Agressif : Rendement brut 5,5 %, Frais 1,9 %, Net 3,6 %.
-        - Frais d'entrée : 2 %.
+        - Frais d’entrée : 2 %.
     - **Ramify** (utilisé en interne pour la comparaison) :
         - Défensif : Rendement brut 2,8 %, Frais 0,7 %, Net 2,1 %.
         - Équilibré : Rendement brut 7,23 %, Frais 1,15 %, Net 6,1 %.
         - Agressif : Rendement brut 11,66 %, Frais 1,15 %, Net 10,51 %.
-        - Frais d'entrée : 0 %.
+        - Frais d’entrée : 0 %.
 </aside>
 
 <aside>
 
-## Exemple complet d'une utilisation du simulateur
+## Exemple complet d’une utilisation du simulateur
 
 **Utilisateur** : 40 ans, salarié, revenu net de 60 000 €/an, progression de 3 %/an, 2 parts fiscales, frais réels de 5 000 €, courtier en ligne, profil Équilibré, PER non ouvert, investissement initial de 10 000 €, versements mensuels de 500 € (6 000 €/an).
 
 - **Durée** : 20 ans (simplifié).
-- **Sur l'année en cours (2025)** :
+- **Sur l’année en cours (2025)** :
     - Impôts sans PER : 3 565 €.
     - Impôts avec PER : 2 959 €.
-    - Effort d'épargne réel : 5 394 €.
+    - Effort d’épargne réel : 5 394 €.
     - TMI : 11 %.
-    - Taux moyen d'imposition : 6,5 %.
+    - Taux moyen d’imposition : 6,5 %.
     - Plafond de déduction : 5 500 €.
-- **À l'échéance (retraite)** :
+- **À l’échéance (retraite)** :
     - Capital total brut : 204 261 €.
         - Comparaison avec Ramify (Équilibré) : 282 071 € (+38 %).
     - Total versements : 171 614 €.
-        - Comparaison avec Ramify : 171 614 € (0 %, frais d'entrée identiques).
+        - Comparaison avec Ramify : 171 614 € (0 %, frais d’entrée identiques).
     - Plus-value : 32 647 €.
         - Comparaison avec Ramify : 110 457 € (+238 %).
     - Capital net de frais et impôts : 142 983 €.
@@ -741,8 +745,8 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
         - Comparaison avec Ramify : 28 679 € (+16 %).
     - Impact impôts : 61 278 €.
         - Comparaison avec Ramify : 84 621 € (+38 %).
-    - Économie d'impôt réalisée : 35 340 €.
-    - Effort d'épargne réel (total) : 136 274 €.
+    - Économie d’impôt réalisée : 35 340 €.
+    - Effort d’épargne réel (total) : 136 274 €.
 - **Montants pour les 3 types de sortie** :
     - 100 % en Rente : 4 680 €/an.
         - Comparaison avec Ramify : 6 460 €/an (+38 %).
@@ -758,14 +762,15 @@ Si possible, l’idée serait d’itérer plus tard en étant plus précis.
 
 ## UI
 
-- Avoir un ❓(icone pas emoji ofc) à côté des éléments non évidents qui affiche un tooltip explicatif
+- Avoir un “?” ou “i” en icône à côté des éléments non évidents qui affiche un tooltip explicatif
 - CTAs de fin : Ouvrir un PER / Echanger avec un Conseiller et 3eme en lien texte dessous vers la page produit
+- Pour les résultats, voir les concurrents mais avec quelques visualisations en plus des résultats chiffrés serait cool
 
 ## UX
 
-- Si la personne clique "ouvrir un PER avec Ramify", si possible que les données récupérées ne doivent pas être renseignées à nouveau (pour fluidifier l'onboarding / augmenter le % de conversion)
-- Si la personne prend RDV p'tet automatiquement joindre le résumé de sa simulation pour le commercial qui répondra et répondre automatiquement à la première question du flow RDV ?
-- Messages d'alertes
-    - Si les versements dépassent le plafond de déductibilité : "Vos versements dépassent votre plafond de déductibilité. L'excédent ne sera pas déductible."
+- Si la personne clique “ouvrir un PER avec Ramify”, si possible que les données récupérées ne doivent pas être renseignées à nouveau (pour fluidifier l’onboarding / augmenter le % de conversion)
+- Si la personne prend RDV p’tet automatiquement joindre le résumé de sa simulation pour le commercial qui répondra et répondre automatiquement à la première question du flow RDV ?
+- Messages d’alertes possibles ?
+    - Si les versements dépassent le plafond de déductibilité : "Vos versements dépassent votre plafond de déductibilité. L’excédent ne sera pas déductible."
     - Si le profil est agressif : "Le profil Agressif offre un rendement plus élevé, mais comporte des risques. Les performances passées ne garantissent pas les résultats futurs."
 </aside>
