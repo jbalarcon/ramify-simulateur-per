@@ -663,6 +663,70 @@ h3 {
     /* Le style .comparison-badge s'applique déjà */
 }
 
+/* Styles for Ramify Toggle Button */
+.ramify-toggle-container {
+    text-align: left; /* Keep left alignment */
+    margin: 2rem 0 1.5rem 0;
+    border-top: 1px solid var(--border--primary);
+    padding-top: 1.5rem;
+}
+
+#ramify-toggle {
+    /* Inherit base button styles */
+    display: inline-flex; /* Keep flex for icon alignment */
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    text-decoration: none !important;
+    line-height: 1;
+    position: relative;
+    overflow: hidden;
+    transition: background-color .3s ease, color 0.3s ease, border-color 0.3s ease;
+    font-weight: 500;
+
+    /* Make it more prominent */
+    background-color: var(--color--gold200); /* Gold-ish background */
+    color: var(--color--gold800); /* Darker gold text */
+    border: 1px solid var(--color--gold400); /* Gold border */
+    border-radius: var(--radius--main);
+    padding: 0.75rem 1.5rem; /* Increased padding */
+    font-size: 1rem; /* Slightly larger font */
+}
+
+#ramify-toggle:hover {
+    background-color: var(--color--gold300); /* Lighter gold on hover */
+    border-color: var(--color--gold500);
+    color: var(--color--gold800);
+}
+
+#ramify-toggle::after {
+    content: '▼'; /* Down arrow */
+    display: inline-block;
+    font-size: 0.8em; /* Adjusted size */
+    margin-left: 0.5em; /* Adjusted spacing */
+    transition: transform 0.3s ease;
+}
+
+#ramify-toggle.open::after {
+    transform: rotate(180deg); /* Rotate arrow when open */
+}
+
+/* Styles for the Ramify Comparison Section */
+#ramify-comparison-section {
+    /* display: none; */ /* Initial display is handled by max-height */
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border--primary);
+    max-height: 0;
+    overflow: hidden;
+    /* Simplify transition to only max-height */
+    transition: max-height 0.5s ease-out;
+}
+
+#ramify-comparison-section.visible {
+    max-height: 1000px; /* Large enough to fit content */
+}
+
 /* Placeholder pour aligner la grille quand il manque des cartes */
 .empty-placeholder {
     background-color: transparent;
@@ -671,11 +735,28 @@ h3 {
     margin: 0;
 }
 
-.output-grid {
-    display: grid;
-    /* Mieux utiliser l'espace sur 80rem */
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
+/* Styling for the CTA placeholder box */
+.cta-placeholder {
+    background-color: var(--color--grey100); /* Added light grey background */
+    border: 1px solid var(--color--grey200); /* Added subtle border back */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    grid-column: span 2; /* Keep spanning 2 columns */
+    padding: 1.5rem; /* Maintain padding for alignment */
+}
+
+.cta-placeholder .button.is-link {
+    padding: 0; /* Remove button padding */
+    text-decoration: underline;
+    color: var(--color-grey900); /* Use primary text color */
+    font-size: 1rem; /* Slightly larger font */
+    font-weight: 500;
+}
+
+.cta-placeholder .button.is-link:hover {
+    color: var(--color--gold700); /* Gold on hover */
 }
 
 /* Remove old bar segment styles */
@@ -780,4 +861,78 @@ h3 {
 .tax-bar-value-with,
 .tax-bar-value-saving {
     display: none; /* Hide old value spans */
+}
+
+/* Styles for Exit Options Toggle Button (Copy of #ramify-toggle) */
+.exit-options-toggle-container {
+     text-align: left;
+     margin: 2rem 0 1.5rem 0;
+     border-top: 1px solid var(--border--primary);
+     padding-top: 1.5rem;
+}
+
+#exit-options-toggle {
+    /* Inherit base button styles */
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    text-decoration: none !important;
+    line-height: 1;
+    position: relative;
+    overflow: hidden;
+    transition: background-color .3s ease, color 0.3s ease, border-color 0.3s ease;
+    font-weight: 500;
+
+    /* Make it more prominent */
+    background-color: var(--color--gold200);
+    color: var(--color--gold800);
+    border: 1px solid var(--color--gold400);
+    border-radius: var(--radius--main);
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+#exit-options-toggle:hover {
+    background-color: var(--color--gold300);
+    border-color: var(--color--gold500);
+    color: var(--color--gold800);
+}
+
+#exit-options-toggle::after {
+    content: '▼'; /* Down arrow */
+    display: inline-block;
+    font-size: 0.8em;
+    margin-left: 0.5em;
+    transition: transform 0.3s ease;
+}
+
+#exit-options-toggle.open::after {
+    transform: rotate(180deg); /* Rotate arrow when open */
+}
+
+/* Styles for the Ramify Comparison Section */
+#ramify-comparison-section {
+    /* ... existing styles ... */
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-out;
+}
+
+#ramify-comparison-section.visible {
+    max-height: 1000px; /* Large enough to fit content */
+}
+
+/* Styles for the Ramify Exit Options Section (Copy of comparison section) */
+#ramify-exit-options-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border--primary);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.5s ease-out;
+}
+
+#ramify-exit-options-section.visible {
+    max-height: 1000px; /* Large enough to fit content */
 } 

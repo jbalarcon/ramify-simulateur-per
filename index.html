@@ -251,40 +251,7 @@
                                   <div><span class="output-value" id="netCapital"></span></div>
                              </div>
                          </div>
-                         <!-- Separator -->
-                         <div class="comparison-separator">—— ou avec le PER Ramify ——</div>
-                         <!-- Row 2: Ramify Main Results -->
-                         <div class="output-grid">
-                             <div class="output-item ramify-item">
-                                 <strong>Capital total brut (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="grossCapitalRamifySubcard">
-                                     <span class="output-value" id="ramifyGrossCapitalValue"></span>
-                                     <span class="comparison-badge" id="ramifyGrossCapitalPercent"></span>
-                                 </div>
-                             </div>
-                             <div class="output-item ramify-item">
-                                 <strong>Total versements (Ramify Net)</strong>
-                                 <div class="ramify-comparison-subcard" id="totalPaymentsRamifySubcard">
-                                     <span class="output-value" id="ramifyTotalPaymentsValue"></span>
-                                     <span class="comparison-badge" id="ramifyTotalPaymentsPercent"></span>
-                                 </div>
-                             </div>
-                             <div class="output-item ramify-item">
-                                 <strong>Plus-value brute (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="grossGainRamifySubcard">
-                                     <span class="output-value" id="ramifyGrossGainValue"></span>
-                                     <span class="comparison-badge" id="ramifyGrossGainPercent"></span>
-                                 </div>
-                             </div>
-                              <div class="output-item ramify-item">
-                                 <strong>Capital net (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="netCapitalRamifySubcard">
-                                     <span class="output-value" id="ramifyNetCapitalValue"></span>
-                                     <span class="comparison-badge" id="ramifyNetCapitalPercent"></span>
-                                 </div>
-                             </div>
-                         </div>
-                         <!-- Row 3: User Impact Results -->
+                         <!-- Row 3: User Impact Results (Moved Up) -->
                          <div class="output-grid" style="margin-top: 2rem;"> <!-- Add margin before next user row -->
                              <div class="output-item">
                                  <strong>Impact des frais</strong>
@@ -303,26 +270,67 @@
                                  <span class="output-value" id="totalRealEffort"></span>
                              </div>
                          </div>
-                         <!-- Separator -->
-                         <div class="comparison-separator">—— comparaison de l'impact avec Ramify ——</div>
-                         <!-- Row 4: Ramify Impact Results -->
-                          <div class="output-grid">
-                             <div class="output-item ramify-item">
-                                 <strong>Impact des frais (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="totalFeesImpactRamifySubcard">
-                                     <span class="output-value" id="ramifyTotalFeesImpactValue"></span>
-                                     <span class="comparison-badge" id="ramifyTotalFeesImpactPercent"></span>
+                         <!-- Toggle for Ramify Comparison -->
+                         <div class="ramify-toggle-container" style="text-align: center; margin: 1.5rem 0;">
+                            <button type="button" id="ramify-toggle" class="button is-link" style="padding: 0.5rem 1rem; font-size: 0.9rem;">Comparer avec le PER Ramify</button>
+                         </div>
+
+                         <!-- Ramify Comparison Section (Initially Hidden by CSS max-height) -->
+                         <div id="ramify-comparison-section">
+                             <!-- Row 2: Ramify Main Results -->
+                             <div class="output-grid">
+                                 <div class="output-item ramify-item">
+                                     <strong>Capital total brut (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="grossCapitalRamifySubcard">
+                                         <span class="output-value" id="ramifyGrossCapitalValue"></span>
+                                         <span class="comparison-badge" id="ramifyGrossCapitalPercent"></span>
+                                     </div>
+                                 </div>
+                                 <div class="output-item ramify-item">
+                                     <strong>Total versements (Ramify Net)</strong>
+                                     <div class="ramify-comparison-subcard" id="totalPaymentsRamifySubcard">
+                                         <span class="output-value" id="ramifyTotalPaymentsValue"></span>
+                                         <span class="comparison-badge" id="ramifyTotalPaymentsPercent"></span>
+                                     </div>
+                                 </div>
+                                 <div class="output-item ramify-item">
+                                     <strong>Plus-value brute (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="grossGainRamifySubcard">
+                                         <span class="output-value" id="ramifyGrossGainValue"></span>
+                                         <span class="comparison-badge" id="ramifyGrossGainPercent"></span>
+                                     </div>
+                                 </div>
+                                  <div class="output-item ramify-item">
+                                     <strong>Capital net (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="netCapitalRamifySubcard">
+                                         <span class="output-value" id="ramifyNetCapitalValue"></span>
+                                         <span class="comparison-badge" id="ramifyNetCapitalPercent"></span>
+                                     </div>
                                  </div>
                              </div>
-                             <div class="output-item ramify-item">
-                                 <strong>Impact des impôts (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="totalTaxesImpactRamifySubcard">
-                                     <span class="output-value" id="ramifyTotalTaxesImpactValue"></span>
-                                     <span class="comparison-badge" id="ramifyTotalTaxesImpactPercent"></span>
+                             <!-- Row 4: Ramify Impact Results -->
+                             <div class="output-grid" style="margin-top: 2rem;"> <!-- Added margin-top for consistency -->
+                                 <div class="output-item ramify-item">
+                                     <strong>Impact des frais (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="totalFeesImpactRamifySubcard">
+                                         <span class="output-value" id="ramifyTotalFeesImpactValue"></span>
+                                         <span class="comparison-badge" id="ramifyTotalFeesImpactPercent"></span>
+                                     </div>
                                  </div>
+                                 <div class="output-item ramify-item">
+                                     <strong>Impact des impôts (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="totalTaxesImpactRamifySubcard">
+                                         <span class="output-value" id="ramifyTotalTaxesImpactValue"></span>
+                                         <span class="comparison-badge" id="ramifyTotalTaxesImpactPercent"></span>
+                                     </div>
+                                 </div>
+                                 <!-- "En savoir plus" CTA Box (Moved here) -->
+                                 <div class="output-item cta-placeholder">
+                                     <a href="https://www.ramify.fr/produits/per" class="button is-link" style="font-weight: 500;">En savoir plus sur le PER Ramify →</a>
+                                     <!-- Add an optional icon here if desired -->
+                                  </div>
+                                 <div class="output-item empty-placeholder"></div> <!-- Empty placeholder for alignment -->
                              </div>
-                              <div class="output-item empty-placeholder"></div> <!-- Placeholder -->
-                              <div class="output-item empty-placeholder"></div> <!-- Placeholder -->
                          </div>
                      </div>
 
@@ -349,32 +357,37 @@
                                   <div><span class="output-value" id="fractionalOption"></span> / an</div>
                              </div>
                           </div>
-                          <!-- Separator -->
-                           <div class="comparison-separator">—— ou avec le PER Ramify ——</div>
-                           <!-- Row 2: Ramify Exit Options -->
-                           <div class="output-grid">
-                               <div class="output-item ramify-item">
-                                 <strong>Rente Viagère (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="annuityOptionRamifySubcard">
-                                     <span class="output-value" id="ramifyAnnuityOptionValue"></span> / an
-                                     <span class="comparison-badge" id="ramifyAnnuityOptionPercent"></span>
+                          <!-- Toggle for Ramify Exit Options -->
+                          <div class="exit-options-toggle-container" style="text-align: left; margin: 2rem 0 1.5rem 0; border-top: 1px solid var(--border--primary); padding-top: 1.5rem;">
+                             <button type="button" id="exit-options-toggle" class="button is-link">Comparer les montants si vous aviez un PER Ramify</button> <!-- Use class similar to #ramify-toggle for styling -->
+                          </div>
+                          <!-- Ramify Exit Options Section (Initially Hidden by CSS) -->
+                          <div id="ramify-exit-options-section">
+                             <!-- Row 2: Ramify Exit Options -->
+                             <div class="output-grid">
+                                 <div class="output-item ramify-item">
+                                     <strong>Rente Viagère (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="annuityOptionRamifySubcard">
+                                         <span class="output-value" id="ramifyAnnuityOptionValue"></span> / an
+                                         <span class="comparison-badge" id="ramifyAnnuityOptionPercent"></span>
+                                     </div>
+                                 </div>
+                                 <div class="output-item ramify-item">
+                                     <strong>Capital (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="lumpSumOptionRamifySubcard">
+                                         <span class="output-value" id="ramifyLumpSumOptionValue"></span>
+                                         <span class="comparison-badge" id="ramifyLumpSumOptionPercent"></span>
+                                     </div>
+                                 </div>
+                                 <div class="output-item ramify-item">
+                                     <strong>Capital Fractionné (Ramify)</strong>
+                                     <div class="ramify-comparison-subcard" id="fractionalOptionRamifySubcard">
+                                         <span class="output-value" id="ramifyFractionalOptionValue"></span> / an
+                                         <span class="comparison-badge" id="ramifyFractionalOptionPercent"></span>
+                                     </div>
                                  </div>
                              </div>
-                               <div class="output-item ramify-item">
-                                 <strong>Capital (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="lumpSumOptionRamifySubcard">
-                                     <span class="output-value" id="ramifyLumpSumOptionValue"></span>
-                                     <span class="comparison-badge" id="ramifyLumpSumOptionPercent"></span>
-                                 </div>
-                             </div>
-                             <div class="output-item ramify-item">
-                                 <strong>Capital Fractionné (Ramify)</strong>
-                                 <div class="ramify-comparison-subcard" id="fractionalOptionRamifySubcard">
-                                     <span class="output-value" id="ramifyFractionalOptionValue"></span> / an
-                                     <span class="comparison-badge" id="ramifyFractionalOptionPercent"></span>
-                                 </div>
-                             </div>
-                           </div>
+                          </div>
                      </div>
 
                      <div class="disclaimer-section" style="margin-top: 2rem; padding: 1rem; border-top: 1px solid var(--color--grey300); font-size: 0.85rem; color: var(--text--secondary);">

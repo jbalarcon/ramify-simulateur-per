@@ -861,7 +861,70 @@ document.addEventListener('DOMContentLoaded', () => {
     statusInput.dispatchEvent(new Event('change'));
     perExistingNoRadio.dispatchEvent(new Event('change'));
     fraisReelsNoRadio.dispatchEvent(new Event('change'));
-});
+
+    // Add Ramify comparison toggle functionality
+    const ramifyToggleButton = document.getElementById('ramify-toggle');
+    const ramifyComparisonSection = document.getElementById('ramify-comparison-section');
+
+    if (ramifyToggleButton && ramifyComparisonSection) {
+        console.log("Ramify toggle elements found. Adding listener."); // Log: Listener setup
+        ramifyToggleButton.addEventListener('click', () => {
+            console.log("Ramify toggle button clicked."); // Log: Click detected
+            const isVisible = ramifyComparisonSection.classList.contains('visible');
+            console.log(`Comparison section is currently visible: ${isVisible}`); // Log: Current state
+
+            if (isVisible) {
+                // Start hiding: remove class for transition, then set display none after transition
+                ramifyComparisonSection.classList.remove('visible');
+                ramifyToggleButton.classList.remove('open');
+                console.log("Removed 'visible' and 'open' classes."); // Log: Classes removed
+                 // Set display to none after the transition duration (500ms)
+                 // setTimeout(() => {
+                 //     if (!ramifyComparisonSection.classList.contains('visible')) { // Double-check state
+                 //        ramifyComparisonSection.style.display = 'none';
+                 //        console.log("Set display to none."); // Log: display set
+                 //     }
+                 // }, 500); // Matches CSS transition duration
+            } else {
+                // Start showing: set display block first, then add class for transition
+                // ramifyComparisonSection.style.display = 'block'; // Ensure element takes up space before transition
+                // Force reflow before adding class to ensure transition works
+                // void ramifyComparisonSection.offsetWidth;
+                ramifyComparisonSection.classList.add('visible');
+                ramifyToggleButton.classList.add('open');
+                console.log("Added 'visible' and 'open' classes."); // Log: Classes added
+            }
+        });
+    } else {
+        console.error("Ramify toggle button or section not found!"); // Log: Error if elements missing
+    }
+
+    // Add Exit Options comparison toggle functionality
+    const exitOptionsToggleButton = document.getElementById('exit-options-toggle');
+    const ramifyExitOptionsSection = document.getElementById('ramify-exit-options-section');
+
+    if (exitOptionsToggleButton && ramifyExitOptionsSection) {
+        console.log("Exit Options toggle elements found. Adding listener.");
+        exitOptionsToggleButton.addEventListener('click', () => {
+            console.log("Exit Options toggle button clicked.");
+            const isVisible = ramifyExitOptionsSection.classList.contains('visible');
+            console.log(`Exit Options section is currently visible: ${isVisible}`);
+
+            if (isVisible) {
+                ramifyExitOptionsSection.classList.remove('visible');
+                exitOptionsToggleButton.classList.remove('open');
+                console.log("Removed 'visible' and 'open' classes from Exit Options.");
+            } else {
+                ramifyExitOptionsSection.classList.add('visible');
+                exitOptionsToggleButton.classList.add('open');
+                console.log("Added 'visible' and 'open' classes to Exit Options.");
+            }
+        });
+    } else {
+        console.error("Exit Options toggle button or section not found!");
+    }
+
+}); // End DOMContentLoaded
 
 // --- Main Simulation Logic --- //
 
