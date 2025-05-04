@@ -1,35 +1,16 @@
+import { FISCAL_2025 } from './constants.js';
+import { getNetReturn as getRamifyNetReturn, getGrossReturn as getRamifyGrossReturn } from './providers/ramify.js';
+
 // --- CONSTANTS & CONFIG --- //
 const RETIREMENT_AGE = 64;
 const CURRENT_YEAR = 2025;
-const INFLATION_RATE = 0.015; // 1.5% annual inflation for tax brackets
-const PASS = 46368; // Plafond Annuel de la Sécurité Sociale 2025
-
-// Tax brackets 2025 (will be adjusted for inflation)
-const INITIAL_TAX_BRACKETS = [
-    { limit: 11294, rate: 0.00 },
-    { limit: 28797, rate: 0.11 },
-    { limit: 82341, rate: 0.30 },
-    { limit: 177106, rate: 0.41 },
-    { limit: Infinity, rate: 0.45 }
-];
-
-// Deduction ceiling parameters
-const DEDUCTION_CEILING_MIN = 4114;
-const DEDUCTION_CEILING_MAX = 35194;
-const DEDUCTION_CEILING_PERCENT = 0.10;
 const INDEPENDANT_ABATTEMENT = 0.40; // Average 40% for independents
-const INDEPENDANT_EXTRA_DEDUCTION_RATE = 0.15;
+const ANNUITY_TAXABLE_FRACTION = 0.40; // Taxable fraction at 64
 
 // Real expenses parameters (abattement forfaitaire)
 const FORFAIT_RATE = 0.10;
 const FORFAIT_MIN = 504;
 const FORFAIT_MAX = 14426;
-
-// Exit taxation
-const PFU_RATE = 0.30; // Flat tax on capital gains (12.8% tax + 17.2% social levies)
-const ANNUITY_CONVERSION_RATE = 0.04; // Fixed conversion rate at 64
-const ANNUITY_TAXABLE_FRACTION = 0.40; // Taxable fraction at 64
-const SOCIAL_LEVIES_ON_ANNUITY_FRACTION = 0.172;
 
 // Contract specific data (Based on info-dump.md)
 const CONTRACT_DATA = {
@@ -48,15 +29,6 @@ const CONTRACT_DATA = {
             'Équilibré': { netReturn: 0.027, grossReturn: 0.0415 },
             'Agressif': { netReturn: 0.036, grossReturn: 0.055 }
         }
-    }
-};
-
-const RAMIFY_DATA = {
-    entryFee: 0.00,
-    profiles: {
-        'Défensif': { netReturn: 0.021, grossReturn: 0.028 }, // Assuming same gross as online broker for fee calc
-        'Équilibré': { netReturn: 0.061, grossReturn: 0.0723 }, // Provided in info-dump
-        'Agressif': { netReturn: 0.1051, grossReturn: 0.1166 } // Provided in info-dump
     }
 };
 
@@ -149,6 +121,12 @@ let dataModified = false; // Flag to track if data was changed in the 'Data' tab
 let currentActiveTab = 'results-content'; // Track the currently active tab
 let activeProgressLine = null; // To hold the dynamic active line element
 
+// Initialize global settings object
+window.settings = {
+    inflation: FISCAL_2025.DEFAULT_INFLATION,
+    annuityRate: FISCAL_2025.DEFAULT_CONV_RATE
+};
+
 // --- UTILITY FUNCTIONS --- //
 
 /**
@@ -188,22 +166,26 @@ function calculateIncomeTax(taxableIncome, fiscalParts, yearIndex) {
     let cumulativeLimit = 0;
     let currentTmi = 0;
 
-    // Adjust brackets for inflation relative to the base year (CURRENT_YEAR)
-    const brackets = INITIAL_TAX_BRACKETS.map(bracket => ({
+    // Use imported constants and adjust brackets for inflation from settings
+    const inflation = window.settings.inflation; // Read from global settings
+    const inflationFactor = Math.pow(1 + inflation, yearIndex);
+
+    const brackets = FISCAL_2025.TAX_BRACKETS.map(bracket => ({
         ...bracket,
-        limit: bracket.limit === Infinity ? Infinity : bracket.limit * Math.pow(1 + INFLATION_RATE, yearIndex)
+        ceiling: bracket.ceiling === Infinity ? Infinity : bracket.ceiling * inflationFactor
     }));
 
+    // Rename 'limit' to 'ceiling' to match constants.js
     for (const bracket of brackets) {
         if (quotientFamilial > cumulativeLimit) {
-            const taxableInBracket = Math.min(quotientFamilial, bracket.limit) - cumulativeLimit;
+            const taxableInBracket = Math.min(quotientFamilial, bracket.ceiling) - cumulativeLimit;
             taxAmount += taxableInBracket * bracket.rate;
-            if (quotientFamilial <= bracket.limit) {
+            if (quotientFamilial <= bracket.ceiling) {
                 currentTmi = bracket.rate;
                 break; // Found the TMI
             }
         }
-        cumulativeLimit = bracket.limit;
+        cumulativeLimit = bracket.ceiling;
     }
 
     taxAmount *= fiscalParts;
@@ -215,36 +197,40 @@ function calculateIncomeTax(taxableIncome, fiscalParts, yearIndex) {
 /**
  * Calculates the PER deduction ceiling for a given year.
  * @param {number} netIncome - Net income for the year (used as proxy for TNS benefit).
- * @param {number} taxableIncomeForSalaryCalc - Taxable income for the year (ONLY used for Salarié/Retraité calculation).
+ * @param {number} taxableIncomeForSalaryCalc - Taxable income for the year (ONLY used for Salarié/Retraité calculation BEFORE 10% deduction).
  * @param {string} status - Professional status ('Salarié', 'Retraité', 'Indépendant').
  * @param {number} yearIndex - The index of the simulation year (0 for current year, 1 for next, etc.).
  * @returns {number} The calculated deduction ceiling.
  */
 function calculateDeductionCeiling(netIncome, taxableIncomeForSalaryCalc, status, yearIndex) {
     let ceiling = 0;
-    // Adjust thresholds for inflation
-    const currentPass = PASS * Math.pow(1 + INFLATION_RATE, yearIndex);
+    // No inflation adjustment needed for ceilings in year 0 (2025) as constants are for 2025
+    // Apply inflation only for future years (yearIndex > 0) ? The plan doesn't specify. Assuming constants are fixed for now.
+    // ~~TODO: Clarify if PASS and ceilings need inflation adjustment in the simulation loop. For now, using fixed 2025 values.~~
+
+    const currentPass = FISCAL_2025.PASS;
     const currentPass8 = currentPass * 8;
-    const currentCeilingMinSalarie = DEDUCTION_CEILING_MIN * Math.pow(1 + INFLATION_RATE, yearIndex);
-    const currentCeilingMaxSalarie = DEDUCTION_CEILING_MAX * Math.pow(1 + INFLATION_RATE, yearIndex);
-    // Estimate TNS specific min/max for 2025+ based on 2024 values + inflation
-    const TNS_MIN_2024 = 4637; // Based on image for PASS 2024
-    const TNS_MAX_2024 = 85780; // Based on image for PASS 2024
-    const currentCeilingMinTNS = TNS_MIN_2024 * Math.pow(1 + INFLATION_RATE, yearIndex + 1); // +1 because 2024 is base
-    const currentCeilingMaxTNS = TNS_MAX_2024 * Math.pow(1 + INFLATION_RATE, yearIndex + 1);
+    const currentCeilingMinSal = FISCAL_2025.PLAFOND_MIN_SAL;
+    const currentCeilingMaxSal = FISCAL_2025.PLAFOND_MAX_SAL;
+    const currentCeilingMinTNS = FISCAL_2025.PLAFOND_MIN_TNS;
+    const currentCeilingMaxTNS = FISCAL_2025.PLAFOND_MAX_TNS;
 
     if (status === 'Salarié' || status === 'Retraité') {
-        // 10% of N-1 taxable income (using current year as approx)
-        ceiling = taxableIncomeForSalaryCalc * DEDUCTION_CEILING_PERCENT;
-        ceiling = Math.max(currentCeilingMinSalarie, ceiling);
-        ceiling = Math.min(currentCeilingMaxSalarie, ceiling);
-    } else { // Indépendant (TNS) - Implementing regulatory calculation
-        const benefit = netIncome; // Using net income as proxy for benefit
+        // 10% of N-1 taxable income (using taxableIncomeForSalaryCalc as N-1 approx)
+        // Plan says "borne min/max FISCAL_2025", implies 10% of income capped by these.
+        ceiling = taxableIncomeForSalaryCalc * 0.10;
+        ceiling = Math.max(currentCeilingMinSal, ceiling);
+        ceiling = Math.min(currentCeilingMaxSal, ceiling);
+    } else { // Indépendant (TNS)
+        // Plan: "formule 10 % + 15 % avec bornes ; utiliser revenu **avant** abattement de 10 %."
+        // Assuming 'netIncome' passed is the reference income *before* any specific TNS abattement for this calculation.
+        const benefit = netIncome; // Use netIncome as the base for calculation
 
-        // Part 1: 10% of benefit, capped at 10% of 8 PASS
-        const ceilingPart1 = 0.10 * Math.min(benefit, currentPass8);
-
-        // Part 2: 15% of benefit portion between 1 PASS and 8 PASS
+        // Part 1: 10% of benefit, capped at 10% of 8 PASS (which is PLAFOND_MAX_TNS based on its calculation?)
+        // Let's recalculate explicitly based on the formula "10% + 15%":
+        // 10% of the fraction of professional income not exceeding 1 PASS
+        // + 15% of the fraction exceeding 1 PASS but not exceeding 8 PASS
+        const ceilingPart1 = 0.10 * Math.min(benefit, currentPass);
         let ceilingPart2 = 0;
         if (benefit > currentPass) {
             const benefitFraction = Math.min(benefit, currentPass8) - currentPass;
@@ -252,8 +238,10 @@ function calculateDeductionCeiling(netIncome, taxableIncomeForSalaryCalc, status
         }
 
         ceiling = ceilingPart1 + ceilingPart2;
+
+        // Apply TNS specific floor and ceiling from constants
         ceiling = Math.max(currentCeilingMinTNS, ceiling);
-        ceiling = Math.min(currentCeilingMaxTNS, ceiling);
+        ceiling = Math.min(currentCeilingMaxTNS, ceiling); // Max is explicit 87135
     }
 
     return ceiling;
@@ -482,7 +470,6 @@ function populateDataTab() {
             }
         } else {
              // Handle cases where the ID might not directly match (e.g., radio button names)
-             // This part might be redundant now with the improved radio handling above, but keep as a safety check
              if (key === 'fraisReels') {
                  const radioNo = document.getElementById('data-fraisReelsNo');
                  const radioYes = document.getElementById('data-fraisReelsYes');
@@ -508,6 +495,20 @@ function populateDataTab() {
         }
     }
 
+    // Populate Expert Settings inputs from window.settings
+    const inflationInput = document.getElementById('data-inflationInput');
+    const inflationValueSpan = document.getElementById('data-inflationValue');
+    const annuityRateInput = document.getElementById('data-annuityRateInput');
+
+    if (inflationInput && inflationValueSpan) {
+        const currentInflationPercent = (window.settings.inflation * 100).toFixed(1);
+        inflationInput.value = currentInflationPercent;
+        inflationValueSpan.textContent = `${currentInflationPercent}%`;
+    }
+    if (annuityRateInput) {
+        annuityRateInput.value = (window.settings.annuityRate * 100).toFixed(1);
+    }
+
     // Explicitly ensure conditional visibility based on populated state, in case events didn't fire correctly
     const dataStatusInput = document.getElementById('data-professionalStatus');
     if(dataStatusInput) {
@@ -529,29 +530,33 @@ function populateDataTab() {
  */
 function getDataTabInputs() {
     const currentData = {};
-    const dataInputs = dataFormContainer.querySelectorAll('input, select');
+    const dataInputs = dataFormContainer.querySelectorAll('#data-form input, #data-form select'); // Select only from the main data form
 
     dataInputs.forEach(input => {
         if (input.name) {
-            // Adjust name to match the keys used in simulation (remove 'data-' prefix if needed)
+            // Adjust name to match the keys used in simulation (remove 'data-' prefix)
             let originalName = input.name;
              if (input.name.startsWith('data-')) {
-                originalName = input.name.substring(5); // Use original name for radio group check
-                if(input.type === 'radio'){
+                originalName = input.name.substring(5);
+                 if(input.type === 'radio'){
                      if (input.checked) {
                          currentData[originalName] = input.value;
                      }
                  } else {
-                     originalName = input.id.substring(5); // Use ID-based name for others
+                     // Use ID for non-radio inputs within data-form
+                     originalName = input.id.substring(5);
                      currentData[originalName] = input.type === 'checkbox' ? input.checked : input.value;
                  }
             } else {
-                 currentData[input.name] = input.type === 'checkbox' ? input.checked : input.value;
+                 // Should not happen if we select only within #data-form
+                 // currentData[input.name] = input.type === 'checkbox' ? input.checked : input.value;
             }
         }
     });
 
-    // --- Convert types and perform basic validation ---
+    // --- Convert types and perform basic validation --- 
+    // Expert settings are handled separately via window.settings
+
     const convertedInputs = {
         age: parseInt(currentData.age),
         professionalStatus: currentData.professionalStatus,
@@ -568,14 +573,14 @@ function getDataTabInputs() {
         riskProfile: currentData.riskProfile,
     };
 
-    // Add similar validation as in getUserInputs/validateStep if strict validation is needed here too
+    // Add similar validation as in initial form if needed
     if (isNaN(convertedInputs.age) || convertedInputs.age < 18 || convertedInputs.age > RETIREMENT_AGE - 1) { return null; }
     if (isNaN(convertedInputs.netIncome) || convertedInputs.netIncome < 0) { return null; }
     // ... add other critical validations ...
 
     // Adjust income evolution for retirees
      if (convertedInputs.professionalStatus === 'Retraité') {
-         convertedInputs.incomeEvolution = INFLATION_RATE;
+         convertedInputs.incomeEvolution = FISCAL_2025.DEFAULT_INFLATION;
      }
 
     return convertedInputs;
@@ -641,7 +646,8 @@ dataFormContainer.addEventListener('change', (event) => {
      if (event.isTrusted) {
          console.log("Data modified by user.");
         dataModified = true;
-        // Add listeners for radio buttons specifically if needed
+
+        // Handle specific input updates for conditional display
         if(event.target.type === 'radio' && event.target.name === 'data-fraisReels'){
             const amountDiv = document.getElementById('data-fraisReelsAmountDiv');
             const amountInput = document.getElementById('data-fraisReelsAmount');
@@ -659,6 +665,23 @@ dataFormContainer.addEventListener('change', (event) => {
               const evoGroup = document.getElementById('data-incomeEvolutionGroup');
               evoGroup.style.display = (event.target.value === 'Retraité') ? 'none' : 'block';
           }
+
+         // Handle expert settings updates -> update window.settings
+         if (event.target.id === 'data-inflationInput') {
+             const inflationRate = parseFloat(event.target.value) / 100;
+             window.settings.inflation = inflationRate;
+             // Update the display value next to the slider
+             const inflationValueSpan = document.getElementById('data-inflationValue');
+             if (inflationValueSpan) {
+                 inflationValueSpan.textContent = `${(inflationRate * 100).toFixed(1)}%`;
+             }
+             dataModified = true; // Mark data as modified when expert settings change
+         }
+         if (event.target.id === 'data-annuityRateInput') {
+             window.settings.annuityRate = parseFloat(event.target.value) / 100;
+             dataModified = true; // Mark data as modified when expert settings change
+         }
+
      }
 });
 
@@ -869,7 +892,7 @@ function runSimulation(newInputs = null) {
         };
          // Adjust income evolution for retirees if needed
          if (inputs.professionalStatus === 'Retraité') {
-             inputs.incomeEvolution = INFLATION_RATE;
+             inputs.incomeEvolution = FISCAL_2025.DEFAULT_INFLATION;
          }
     }
 
@@ -938,30 +961,67 @@ function runSimulation(newInputs = null) {
 
      const userContractDetails = CONTRACT_DATA[inputs.contractType];
     const userProfileDetails = userContractDetails.profiles[inputs.riskProfile];
-    const ramifyProfileDetails = RAMIFY_DATA.profiles[inputs.riskProfile];
+    // Get Ramify returns using the provider functions
+    const ramifyNetReturn = getRamifyNetReturn(inputs.riskProfile);
+    const ramifyGrossReturn = getRamifyGrossReturn(inputs.riskProfile);
+
     const userGrowthGross = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, userProfileDetails.grossReturn, duration, userContractDetails.entryFee);
-    const ramifyGrowthGross = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, ramifyProfileDetails.grossReturn, duration, RAMIFY_DATA.entryFee);
+    // Assuming Ramify entry fee is 0 as per old constant
+    const ramifyGrowthGross = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, ramifyGrossReturn, duration, 0.00);
      const userGrowthNet = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, userProfileDetails.netReturn, duration, userContractDetails.entryFee);
-     const ramifyGrowthNet = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, ramifyProfileDetails.netReturn, duration, RAMIFY_DATA.entryFee);
+    const ramifyGrowthNet = calculateCapitalGrowth(inputs.initialInvestment, annualPERPayments, ramifyNetReturn, duration, 0.00);
     const userFeeImpact = Math.max(0, userGrowthGross.finalCapital - userGrowthNet.finalCapital);
     const ramifyFeeImpact = Math.max(0, ramifyGrowthGross.finalCapital - ramifyGrowthNet.finalCapital);
     const tmiAtRetirement = annualData[duration - 1].tmiWithPer;
-    const userTaxOnPayments = userGrowthNet.totalNetInvested * tmiAtRetirement;
-    const userTaxOnGains = userGrowthNet.totalGrossGain * PFU_RATE;
-    const userTotalTaxImpact = userTaxOnPayments + userTaxOnGains;
-    const userNetCapital = userGrowthNet.finalCapital - userTotalTaxImpact;
-    const ramifyTaxOnPayments = ramifyGrowthNet.totalNetInvested * tmiAtRetirement;
-    const ramifyTaxOnGains = ramifyGrowthNet.totalGrossGain * PFU_RATE;
-    const ramifyTotalTaxImpact = ramifyTaxOnPayments + ramifyTaxOnGains;
-    const ramifyNetCapital = ramifyGrowthNet.finalCapital - ramifyTotalTaxImpact;
-    const userAnnuityGross = userNetCapital * ANNUITY_CONVERSION_RATE;
-    const userAnnuityNet = userAnnuityGross * (1 - (ANNUITY_TAXABLE_FRACTION * tmiAtRetirement + ANNUITY_TAXABLE_FRACTION * SOCIAL_LEVIES_ON_ANNUITY_FRACTION));
-    const ramifyAnnuityGross = ramifyNetCapital * ANNUITY_CONVERSION_RATE;
-    const ramifyAnnuityNet = ramifyAnnuityGross * (1 - (ANNUITY_TAXABLE_FRACTION * tmiAtRetirement + ANNUITY_TAXABLE_FRACTION * SOCIAL_LEVIES_ON_ANNUITY_FRACTION));
+
+    // Calculate Net Capital after Tax on Exit (Lump Sum Scenario)
+    const totalSocialLeviesRate = FISCAL_2025.PS; // 17.2%
+    const flatTaxRate = FISCAL_2025.PFU; // 12.8%
+    const totalFlatTaxRate = totalSocialLeviesRate + flatTaxRate; // 30%
+
+    // Tax applies to gains only for lump sum exit
+    const userTaxOnGainsLumpSum = userGrowthNet.totalGrossGain * totalFlatTaxRate;
+    // Tax applies to payments based on TMI at retirement
+    const userTaxOnPaymentsLumpSum = userGrowthNet.totalNetInvested * tmiAtRetirement;
+    const userTotalTaxImpactLumpSum = userTaxOnPaymentsLumpSum + userTaxOnGainsLumpSum;
+    const userNetCapital = userGrowthNet.finalCapital - userTotalTaxImpactLumpSum;
+
+    const ramifyTaxOnGainsLumpSum = ramifyGrowthNet.totalGrossGain * totalFlatTaxRate;
+    const ramifyTaxOnPaymentsLumpSum = ramifyGrowthNet.totalNetInvested * tmiAtRetirement;
+    const ramifyTotalTaxImpactLumpSum = ramifyTaxOnPaymentsLumpSum + ramifyTaxOnGainsLumpSum;
+    const ramifyNetCapital = ramifyGrowthNet.finalCapital - ramifyTotalTaxImpactLumpSum;
+
+    // Calculate Net Annuity after Tax on Exit (Annuity Scenario)
+    // Use dynamic rate from settings
+    const annuityConversionRate = window.settings.annuityRate;
+    const userAnnuityGross = userNetCapital * annuityConversionRate;
+    const ramifyAnnuityGross = ramifyNetCapital * annuityConversionRate;
+
+    // Apply pension taxation rules as per plan
+    const pensionAbatement = FISCAL_2025.RENTE_PENSION_ABATTEMENT; // 10%
+    const pensionSocialLeviesRate = FISCAL_2025.CSG_RET + FISCAL_2025.CRDS_RET + FISCAL_2025.CASA_RET; // 9.1%
+
+    // Social levies applied on gross annuity
+    const userAnnuitySocialLevies = userAnnuityGross * pensionSocialLeviesRate;
+    // IR applied on the portion after abatement, using TMI at retirement
+    const userAnnuityTaxableBase = userAnnuityGross * (1 - pensionAbatement);
+    const userAnnuityIR = userAnnuityTaxableBase * tmiAtRetirement;
+    const userAnnuityNet = Math.max(0, userAnnuityGross - userAnnuitySocialLevies - userAnnuityIR);
+
+    const ramifyAnnuitySocialLevies = ramifyAnnuityGross * pensionSocialLeviesRate;
+    const ramifyAnnuityTaxableBase = ramifyAnnuityGross * (1 - pensionAbatement);
+    const ramifyAnnuityIR = ramifyAnnuityTaxableBase * tmiAtRetirement;
+    const ramifyAnnuityNet = Math.max(0, ramifyAnnuityGross - ramifyAnnuitySocialLevies - ramifyAnnuityIR);
+
+    // Lump Sum Net Capital is already calculated
     const userLumpSumNet = userNetCapital;
     const ramifyLumpSumNet = ramifyNetCapital;
+
+    // Fractional exit (assume same net capital as lump sum, divided over years - simplistic)
+    // TODO: Refine fractional exit tax if needed - assuming simple division for now
     const userFractionalNet = userNetCapital / 10;
     const ramifyFractionalNet = ramifyNetCapital / 10;
+
     const totalPrincipalInvestedByUser = userGrowthNet.totalPrincipalInvested;
     const totalRealEffort = totalPrincipalInvestedByUser - totalTaxSaving;
 
@@ -973,20 +1033,20 @@ function runSimulation(newInputs = null) {
         userGrossCapital: userGrowthGross.finalCapital,
         ramifyGrossCapital: ramifyGrowthGross.finalCapital,
         userTotalPayments: totalPrincipalInvestedByUser,
-        ramifyTotalPayments: ramifyGrowthNet.totalPrincipalInvested,
+        ramifyTotalPayments: ramifyGrowthNet.totalPrincipalInvested, // Note: Ramify total payments principal might differ if fees applied differently
         userGrossGain: userGrowthGross.finalCapital - totalPrincipalInvestedByUser,
         ramifyGrossGain: ramifyGrowthGross.finalCapital - ramifyGrowthNet.totalPrincipalInvested,
-        userNetCapital: userNetCapital,
-        ramifyNetCapital: ramifyNetCapital,
+        userNetCapital: userNetCapital, // Net capital after lump sum tax
+        ramifyNetCapital: ramifyNetCapital, // Net capital after lump sum tax
         userFeeImpact: userFeeImpact,
         ramifyFeeImpact: ramifyFeeImpact,
-        userTaxImpact: userTotalTaxImpact,
-        ramifyTaxImpact: ramifyTotalTaxImpact,
-        totalTaxSaving: totalTaxSaving,
-        totalRealEffort: totalRealEffort,
-        userAnnuity: userAnnuityNet,
-        userLumpSum: userLumpSumNet,
-        userFractional: userFractionalNet,
+        userTaxImpact: userTotalTaxImpactLumpSum, // Report lump sum tax impact
+        ramifyTaxImpact: ramifyTotalTaxImpactLumpSum, // Report lump sum tax impact
+        totalTaxSaving: totalTaxSaving, // Cumulative tax saving during accumulation
+        totalRealEffort: totalRealEffort, // Cumulative real effort during accumulation
+        userAnnuity: userAnnuityNet, // Net annual annuity
+        userLumpSum: userLumpSumNet, // Net lump sum capital
+        userFractional: userFractionalNet, // Net annual fractional withdrawal
         ramifyAnnuity: ramifyAnnuityNet,
         ramifyLumpSum: ramifyLumpSumNet,
         ramifyFractional: ramifyFractionalNet,
@@ -995,7 +1055,7 @@ function runSimulation(newInputs = null) {
         currentYearPayment: annualData[0].payment,
         currentYearCeiling: annualData[0].ceiling,
         inputsForChart: inputs,
-        annualPERPayments: annualPERPayments,
+        annualPERPayments: annualPERPayments, // Array of annual payments over duration
     };
 
     lastShownResults = results;
@@ -1089,6 +1149,17 @@ function displayResults(results) {
     alertCeiling.style.display = cy.payment > cy.ceiling ? 'block' : 'none';
     alertAggressive.style.display = results.riskProfile === 'Agressif' ? 'block' : 'none';
 
+    // New Alert: Savings Effort > 40% of Net Income
+    const alertEffort = document.getElementById('alert-effort');
+    if (alertEffort && results.inputsForChart && results.inputsForChart.netIncome > 0) {
+        const netIncome = results.inputsForChart.netIncome;
+        const annualPayment = results.currentYearPayment; // Already calculated in runSimulation
+        const effortRatio = annualPayment / netIncome;
+        alertEffort.style.display = effortRatio > 0.40 ? 'block' : 'none';
+    } else if (alertEffort) {
+        alertEffort.style.display = 'none'; // Hide if income is zero or missing
+    }
+
     // --- Update Retirement Projection Section --- 
     // Row 1: User values
     displayElement('grossCapital', formatCurrency(results.userGrossCapital));
@@ -1101,7 +1172,7 @@ function displayResults(results) {
     displayElement('ramifyGrossCapitalPercent', formatPercentDiff(results.userGrossCapital, results.ramifyGrossCapital));
 
     const userNetInvested = calculateCapitalGrowth(results.inputsForChart.initialInvestment, results.annualPERPayments, 0, results.duration, CONTRACT_DATA[results.inputsForChart.contractType].entryFee).totalNetInvested;
-    const ramifyNetInvested = calculateCapitalGrowth(results.inputsForChart.initialInvestment, results.annualPERPayments, 0, results.duration, RAMIFY_DATA.entryFee).totalNetInvested;
+    const ramifyNetInvested = calculateCapitalGrowth(results.inputsForChart.initialInvestment, results.annualPERPayments, 0, results.duration, 0.00).totalNetInvested;
     displayElement('ramifyTotalPaymentsValue', formatCurrency(ramifyNetInvested));
     displayElement('ramifyTotalPaymentsPercent', formatPercentDiff(userNetInvested, ramifyNetInvested));
     // Hide comparison if values are essentially the same
@@ -1156,29 +1227,30 @@ function updateChart(results) {
 
     const duration = results.duration;
     const labels = results.chartLabels;
-    const userCapitalAnnualGross = [inputs.initialInvestment];
-    const ramifyCapitalAnnualGross = [inputs.initialInvestment];
+    const userCapitalAnnualGross = []; // Initialize with length 0
+    const ramifyCapitalAnnualGross = []; // Initialize with length 0
 
     const userContractDetails = CONTRACT_DATA[inputs.contractType];
     const userProfileDetails = userContractDetails.profiles[inputs.riskProfile];
-    const ramifyProfileDetails = RAMIFY_DATA.profiles[inputs.riskProfile];
-
-    const userReturnRate = userProfileDetails.grossReturn;
-    const ramifyReturnRate = ramifyProfileDetails.grossReturn;
+    const ramifyReturnRate = getRamifyGrossReturn(inputs.riskProfile); // Use provider
 
     let userCurrentCapital = inputs.initialInvestment * (1 - userContractDetails.entryFee);
-    let ramifyCurrentCapital = inputs.initialInvestment * (1 - RAMIFY_DATA.entryFee);
+    let ramifyCurrentCapital = inputs.initialInvestment * (1 - 0.00); // Assuming Ramify entry fee is 0
+    // Push initial capital state AFTER applying entry fee
+    userCapitalAnnualGross.push(userCurrentCapital);
+    ramifyCapitalAnnualGross.push(ramifyCurrentCapital);
+
     const annualPERPayments = results.annualPERPayments;
 
     for (let yearIndex = 0; yearIndex < duration; yearIndex++) {
-        userCurrentCapital *= (1 + userReturnRate);
+        userCurrentCapital *= (1 + userProfileDetails.grossReturn);
         const userPaymentThisYear = annualPERPayments[yearIndex] || 0;
         userCurrentCapital += userPaymentThisYear * (1 - userContractDetails.entryFee);
         userCapitalAnnualGross.push(userCurrentCapital);
 
         ramifyCurrentCapital *= (1 + ramifyReturnRate);
         const ramifyPaymentThisYear = annualPERPayments[yearIndex] || 0;
-        ramifyCurrentCapital += ramifyPaymentThisYear * (1 - RAMIFY_DATA.entryFee);
+        ramifyCurrentCapital += ramifyPaymentThisYear * (1 - 0.00);
         ramifyCapitalAnnualGross.push(ramifyCurrentCapital);
     }
 
@@ -1218,3 +1290,199 @@ function getUserInputs() {
     // ... This function is no longer used ...
 }
 */ 
+
+/**
+ * Initializes all event listeners for the simulator.
+ */
+function initializeEventListeners() {
+    // Initial Form Navigation
+    // ... existing code ...
+
+    // Update Results Button in Data Tab
+    const recalculateBtn = document.getElementById('recalculate-btn');
+    if (recalculateBtn) {
+        recalculateBtn.addEventListener('click', () => {
+            // Collect current inputs from the data tab
+            const currentInputs = getDataTabInputs();
+            if (currentInputs && lastShownResults) {
+                // Merge with essential non-editable initial data if needed (like age?)
+                // Or better: pass the full structure expected by runSimulation
+                const simulationInputs = {
+                    ...lastShownResults.inputsForChart, // Keep original structure
+                    ...currentInputs // Overwrite with new values from data tab
+                };
+                 console.log("Recalculating with:", simulationInputs); // Log for debugging
+                runSimulation(simulationInputs); // Run simulation with updated data
+                showTabContent('results-content'); // Switch back to results tab
+            } else {
+                console.error("Could not get inputs from data tab or last results missing.");
+                 alert("Erreur lors de la récupération des données modifiées.");
+            }
+        });
+    }
+
+    // Input change listeners in the Data Tab (to set dataModified flag)
+    const dataInputs = dataFormContainer.querySelectorAll('input, select');
+    dataInputs.forEach(input => {
+        input.addEventListener('change', () => {
+            dataModified = true;
+            // Dynamic updates based on changes in the data tab
+            if (input.name === 'data-fraisReels') {
+                const fraisAmountDiv = document.getElementById('data-fraisReelsAmountDiv');
+                const fraisAmountInput = document.getElementById('data-fraisReelsAmount');
+                 const isYes = document.getElementById('data-fraisReelsYes').checked;
+                if (fraisAmountDiv) fraisAmountDiv.style.display = isYes ? 'block' : 'none';
+                if (fraisAmountInput) fraisAmountInput.required = isYes;
+            }
+            if (input.name === 'data-perExisting') {
+                 const isYes = document.getElementById('data-perExistingYes').checked;
+                 const initialGroup = document.getElementById('data-initialInvestmentGroup');
+                 const paymentsGroup = document.getElementById('data-payments2025Group');
+                 if(initialGroup) initialGroup.style.display = isYes ? 'block' : 'none';
+                 if(paymentsGroup) paymentsGroup.style.display = isYes ? 'block' : 'none';
+                 document.getElementById('data-initialInvestment').required = isYes;
+                 document.getElementById('data-payments2025').required = isYes;
+                 // Also update label for initial investment based on perExisting choice
+                 const initialLabel = document.getElementById('data-initialInvestmentLabel');
+                 if (initialLabel) initialLabel.textContent = isYes ? "Investissement initial PER existant (€)" : "Premier versement PER (€)";
+            }
+             if (input.id === 'data-professionalStatus') {
+                 const evolutionGroup = document.getElementById('data-incomeEvolutionGroup');
+                 if (evolutionGroup) {
+                    evolutionGroup.style.display = (input.value === 'Retraité') ? 'none' : 'block';
+                 }
+                 // Also update frais reels options visibility maybe? Depends on rules.
+             }
+             // Update risk profile options based on contract type
+             if (input.id === 'data-contractType') {
+                updateRiskProfileOptions(input.value, 'data-riskProfile');
+             }
+        });
+    });
+
+    // Initial form input listeners (for dynamic UI changes)
+    if(fraisReelsYesRadio) {
+        fraisReelsYesRadio.addEventListener('change', () => {
+            fraisReelsAmountDiv.style.display = 'block';
+            fraisReelsAmountInput.required = true;
+        });
+    }
+     if(fraisReelsNoRadio) {
+        fraisReelsNoRadio.addEventListener('change', () => {
+            fraisReelsAmountDiv.style.display = 'none';
+            fraisReelsAmountInput.required = false;
+             fraisReelsAmountInput.value = ''; // Clear value if hidden
+        });
+     }
+     if (perExistingYesRadio) {
+         perExistingYesRadio.addEventListener('change', () => {
+             initialInvestmentLabel.textContent = "Investissement initial PER existant (€)";
+             payments2025Group.style.display = 'block';
+             payments2025Input.required = true;
+         });
+     }
+     if (perExistingNoRadio) {
+         perExistingNoRadio.addEventListener('change', () => {
+             initialInvestmentLabel.textContent = "Premier versement PER (€)";
+             payments2025Group.style.display = 'none'; // Hide N-1 payments if no existing PER
+             payments2025Input.required = false;
+             payments2025Input.value = ''; // Clear value
+         });
+     }
+     if(statusInput) {
+         statusInput.addEventListener('change', (e) => {
+             if (incomeEvolutionGroup) {
+                 incomeEvolutionGroup.style.display = (e.target.value === 'Retraité') ? 'none' : 'block';
+             }
+         });
+     }
+     if (contractTypeInput) {
+         contractTypeInput.addEventListener('change', (e) => {
+            updateRiskProfileOptions(e.target.value, 'riskProfile'); // Update profiles in initial form
+         });
+     }
+}
+
+/**
+ * Updates the options available in the risk profile select dropdown based on the chosen contract type.
+ * Handles both the initial form and the data tab form using the selectElementId.
+ * @param {string} contractType - The selected contract type ('Courtier en ligne' or 'Banque ou Assureur traditionnel').
+ * @param {string} selectElementId - The ID of the select element to update ('riskProfile' or 'data-riskProfile').
+ */
+function updateRiskProfileOptions(contractType, selectElementId) {
+    const riskProfileSelect = document.getElementById(selectElementId);
+    if (!riskProfileSelect) return;
+
+    const currentProfileValue = riskProfileSelect.value; // Save current selection
+
+    // Determine available profiles based on contract type (use CONTRACT_DATA as source)
+    let availableProfiles = [];
+    if (contractType === 'Courtier en ligne' && CONTRACT_DATA['Courtier en ligne']) {
+        availableProfiles = Object.keys(CONTRACT_DATA['Courtier en ligne'].profiles);
+    } else if (contractType === 'Banque ou Assureur traditionnel' && CONTRACT_DATA['Banque ou Assureur traditionnel']) {
+        availableProfiles = Object.keys(CONTRACT_DATA['Banque ou Assureur traditionnel'].profiles);
+    } else {
+        // Default or fallback if contract type is unknown or data is missing
+        availableProfiles = ['Défensif', 'Équilibré', 'Agressif'];
+    }
+
+    // Clear existing options
+    riskProfileSelect.innerHTML = '';
+
+    // Add new options
+    availableProfiles.forEach(profile => {
+        const option = document.createElement('option');
+        option.value = profile;
+        option.textContent = profile;
+        riskProfileSelect.appendChild(option);
+    });
+
+     // Try to restore previous selection if it's still valid
+     if (availableProfiles.includes(currentProfileValue)) {
+         riskProfileSelect.value = currentProfileValue;
+     } else if (availableProfiles.length > 0) {
+         // Otherwise, select the first available option
+         riskProfileSelect.value = availableProfiles[0];
+     }
+     // Trigger change event on the risk profile select to ensure consistency if needed elsewhere
+     // const changeEvent = new Event('change', { bubbles: true });
+     // riskProfileSelect.dispatchEvent(changeEvent);
+}
+
+
+// --- INITIALIZATION --- //
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM fully loaded and parsed");
+    initializeTooltips();
+    showStep(1); // Show the first step initially
+    // Ensure initial state of conditional fields is correct
+    if (fraisReelsAmountDiv) fraisReelsAmountDiv.style.display = 'none'; // Hide frais reels amount initially
+    if (fraisReelsAmountInput) fraisReelsAmountInput.required = false;
+    if (payments2025Group) payments2025Group.style.display = 'none'; // Hide N-1 payment initially
+    if (payments2025Input) payments2025Input.required = false;
+    if (incomeEvolutionGroup && statusInput && statusInput.value === 'Retraité') { // Hide evolution if default is Retraité
+        incomeEvolutionGroup.style.display = 'none';
+    }
+     if(initialInvestmentLabel) initialInvestmentLabel.textContent = "Premier versement PER (€)"; // Set initial label text
+    updateRiskProfileOptions(contractTypeInput.value, 'riskProfile'); // Set initial risk profiles
+
+    // Setup tab navigation
+    showTabContent('results-content'); // Show results tab by default after form completion
+    tabNavigation.style.display = 'none'; // Hide tabs initially
+    resultsDiv.style.display = 'none'; // Hide results area initially
+    chartContainer.style.display = 'none';
+    ctaContainer.style.display = 'none'; // Hide CTA initially
+
+
+    initializeEventListeners(); // Set up all event listeners
+
+    // Prevent default form submission
+    form.addEventListener('submit', (e) => e.preventDefault());
+});
+
+// DEBUG: Expose runSimulation to global scope for testing
+// window.runSimulation = runSimulation;
+// window.FISCAL_2025 = FISCAL_2025; // Expose constants for debugging
+// window.lastShownResults = () => lastShownResults; // Function to get last results
+
+// --- END OF js/main.js --- 

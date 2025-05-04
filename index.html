@@ -39,7 +39,7 @@
                     </div>
                     <!-- 2. Situation Pro -->
                     <div class="form-group">
-                        <label for="professionalStatus">Situation professionnelle <span class="tooltip-icon" title="Permet d'ajuster le plafond de déductibilité. 'Indépendant' inclut les professions libérales, commerçants, artisans, etc.">?</span></label>
+                        <label for="professionalStatus">Situation professionnelle <span class="tooltip-icon" title="Permet d'ajuster le plafond de déductibilité PER 2025. Salarié/Retraité: 10% des revenus N-1 (min 4 710 €, max 37 680 €). Indépendant: calcul spécifique basé sur le bénéfice (min 4 710 €, max 87 135 €).">?</span></label>
                         <select id="professionalStatus" name="professionalStatus" required>
                             <option value="Salarié" selected>Salarié</option>
                             <option value="Retraité">Retraité</option>
@@ -225,6 +225,7 @@
                          </div>
 
                          <div id="alert-ceiling" class="alert-message">Vos versements dépassent votre plafond de déductibilité. L'excédent ne sera pas déductible cette année.</div>
+                         <div id="alert-effort" class="alert-message" style="display: none;">Attention : Votre effort d'épargne annuel (versements PER) représente plus de 40% de vos revenus nets annuels.</div>
                          <div id="alert-aggressive" class="alert-message">Le profil Agressif offre un potentiel de rendement plus élevé, mais comporte des risques de perte en capital. Les performances passées ne garantissent pas les résultats futurs.</div>
                     </div>
                      <!-- Fin Section Impact Annuel -->
@@ -376,6 +377,10 @@
                            </div>
                      </div>
 
+                     <div class="disclaimer-section" style="margin-top: 2rem; padding: 1rem; border-top: 1px solid var(--color--grey300); font-size: 0.85rem; color: var(--text--secondary);">
+                         <p><strong>Avertissement :</strong> Les résultats de ce simulateur sont fournis à titre indicatif et sont basés sur des hypothèses simplifiées et les règles fiscales applicables pour l'année 2025 (taux et plafonds). Les projections de capital ne constituent pas une garantie de performance future. Les performances passées des supports d'investissement ne préjugent pas des performances futures. Pour une analyse personnalisée, veuillez consulter un conseiller financier.</p>
+                     </div>
+
                      <div class="cta-container">
                          <button class="button is-gold">Ouvrir un PER Ramify</button>
                          <button class="button is-light">Échanger avec un Conseiller</button>
@@ -386,6 +391,26 @@
                 <!-- Data Content Area (duplicate form inputs) -->
                 <div class="tab-content" id="data-content">
                     <h2>Vos données</h2>
+
+                    <div class="expert-settings">
+                        <details>
+                            <summary>Paramètres Expert</summary>
+                            <div class="form-grid expert-grid" style="margin-top: 1rem;">
+                                <div class="form-group">
+                                    <label for="data-inflationInput">Taux d'inflation annuel (%) <span class="tooltip-icon" title="Utilisé pour l'indexation des tranches d'imposition futures. Défaut: 1.8%">?</span></label>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="range" id="data-inflationInput" name="inflationInput" min="0" max="5" step="0.1" value="1.8" style="width: 80%;">
+                                        <span id="data-inflationValue" style="font-weight: bold; min-width: 35px; text-align: right;">1.8%</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="data-annuityRateInput">Taux de conversion en rente (%) <span class="tooltip-icon" title="Taux technique pour estimer la rente brute. La rente nette est calculée selon le régime des pensions (abattement 10% avant IR, prélèvements sociaux 9.1% sur rente brute). Défaut: 4.0%">?</span></label>
+                                     <input type="number" id="data-annuityRateInput" name="annuityRateInput" min="0" step="0.1" value="4.0" style="width: 60px;">
+                                </div>
+                            </div>
+                         </details>
+                    </div>
+
                     <form id="data-form"> <!-- Use a different ID or no ID if needed -->
                          <!-- Duplicate all form groups from steps 1-4 here -->
                          <!-- IMPORTANT: Ensure input IDs are unique if necessary, or select inputs based on parent container -->
@@ -485,6 +510,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html> 
